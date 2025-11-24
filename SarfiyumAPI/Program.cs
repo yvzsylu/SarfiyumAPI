@@ -2,9 +2,16 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using SarfiyumAPI.Data;
+using SarfiyumAPI.Core.Entities;
+
+// --- EKLENEN NAMESPACE'LER (Bu sýnýflarý tanýmasý için þart) ---
+using SarfiyumAPI.Core.Interfaces;   // IAuthService, IRepository, IDataContext için
+using SarfiyumAPI.Data.Context;
+using SarfiyumAPI.Data.Repositories; // Repository implementation için
+using SarfiyumAPI.Service.Services;  // AuthService implementation için
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+// -------------------------------------------------------------
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,11 +21,12 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
 
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(
+builder.Services.AddIdentity<AppUser, IdentityRole>(
     options =>
     {
         options.Password.RequireDigit = true;
@@ -29,6 +37,21 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>(
     })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
+
+// --- HATA ÇÖZÜMÜ ÝÇÝN EKLENEN SERVÝSLER ---
+// Bu bölüm Identity'den sonra, Authentication'dan önce olmalýdýr.
+
+// 1. IDataContext istendiðinde AppDbContext ver.
+builder.Services.AddScoped<IDataContext>(provider => provider.GetService<AppDbContext>());
+
+// 2. Generic Repository Tanýmlamasý
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+// 3. AuthService Tanýmlamasý (Hatanýn asýl kaynaðý burasýydý)
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+// --------------------------------------------
 
 
 builder.Services.AddAuthentication(
@@ -67,6 +90,17 @@ builder.Services.AddAuthorization(options =>
 });
 
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularApp",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:4200")
+                  .AllowAnyHeader()
+                  .AllowAnyMethod();
+        });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -77,6 +111,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// --- CORS MIDDLEWARE'Ý ---
+app.UseCors("AllowAngularApp");
+// ------------------------
 
 app.UseAuthentication();
 

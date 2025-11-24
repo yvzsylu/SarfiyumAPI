@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace SarfiyumAPI.Controllers
+namespace SarfiyumAPI.Controllers.Admin
 {
     [Authorize(Roles = "Admin")]
     [Route("api/[controller]")]

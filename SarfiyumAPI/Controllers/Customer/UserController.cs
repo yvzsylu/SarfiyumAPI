@@ -5,10 +5,10 @@ using SarfiyumAPI.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
-namespace SarfiyumAPI.Controllers
+namespace SarfiyumAPI.Controllers.Customer
 {
     [Authorize(Roles = "User")]
-    [Route("api/[controller]")]
+    [Route("api/customer/[controller]")]
     [ApiController]
     public class UserController : ControllerBase
     {

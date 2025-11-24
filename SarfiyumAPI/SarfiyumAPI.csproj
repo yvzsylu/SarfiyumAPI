@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -20,6 +20,12 @@
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SarfiyumAPI.Core\SarfiyumAPI.Core.csproj" />
+    <ProjectReference Include="..\SarfiyumAPI.Data\SarfiyumAPI.Data.csproj" />
+    <ProjectReference Include="..\SarfiyumAPI.Service\SarfiyumAPI.Service.csproj" />
   </ItemGroup>
 
 </Project>
