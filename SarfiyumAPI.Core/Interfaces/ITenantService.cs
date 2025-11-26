@@ -15,5 +15,7 @@ namespace SarfiyumAPI.Core.Interfaces
         Task<ServiceResult<string>> CreateAsync(TenantDto model);
         Task<ServiceResult<string>> UpdateAsync(TenantDto model);
         Task<ServiceResult<string>> DeleteAsync(string id);
+
+        Task<ServiceResult<string>> UpdateStatusAsync(string id, bool isActive);
     }
 }

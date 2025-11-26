@@ -29,7 +29,6 @@ namespace SarfiyumAPI.Data.Context
             {
                 a.Property(p => p.City).HasColumnName("City").HasMaxLength(50);
                 a.Property(p => p.District).HasColumnName("District").HasMaxLength(50);
-                a.Property(p => p.Street).HasColumnName("Street").HasMaxLength(150);
                 a.Property(p => p.FullAddress).HasColumnName("FullAddress").HasMaxLength(500);
                 a.Property(p => p.ZipCode).HasColumnName("ZipCode").HasMaxLength(20);
                 a.Property(p => p.Country).HasColumnName("Country").HasMaxLength(50);
@@ -80,33 +79,5 @@ namespace SarfiyumAPI.Data.Context
             );
         }
 
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            var datas = ChangeTracker.Entries<EntityBase>();
-
-            foreach (var data in datas)
-            {
-                switch (data.State)
-                {
-                    case EntityState.Added:
-                        data.Entity.CreatedAt = DateTime.UtcNow;
-                        if (string.IsNullOrEmpty(data.Entity.Id))
-                            data.Entity.Id = Guid.NewGuid().ToString();
-                        break;
-
-                    case EntityState.Modified:
-                        data.Entity.ModifiedAt = DateTime.UtcNow;
-                        break;
-
-                    case EntityState.Deleted:
-                        data.State = EntityState.Modified;
-                        data.Entity.IsDeleted = true;
-                        data.Entity.RemovedAt = DateTime.UtcNow;
-                        break;
-                }
-            }
-
-            return await base.SaveChangesAsync(cancellationToken);
-        }
     }
 }

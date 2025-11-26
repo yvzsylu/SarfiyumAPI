@@ -11,7 +11,8 @@ namespace SarfiyumAPI.Core.Interfaces
     public interface IRoleService
     {
         Task<ServiceResult<List<RoleDto>>> GetAllRolesAsync();
-        Task<ServiceResult<string>> CreateRoleAsync(string roleName);
-        // İlerde DeleteRoleAsync, UpdateRoleAsync buraya gelir.
+        Task<ServiceResult<string>> CreateRoleAsync(CreateRoleDto roleName);
+        Task<ServiceResult<string>> UpdateRoleAsync(RoleDto model);
+        Task<ServiceResult<string>> DeleteRoleAsync(string id); // YENİ
     }
 }

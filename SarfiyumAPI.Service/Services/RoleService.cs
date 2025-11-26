@@ -28,11 +28,12 @@ namespace SarfiyumAPI.Service.Services
             return ServiceResult<List<RoleDto>>.Success(roleDtos);
         }
 
-        public async Task<ServiceResult<string>> CreateRoleAsync(string roleName)
+        public async Task<ServiceResult<string>> CreateRoleAsync(CreateRoleDto model)
         {
-            if (!await _roleManager.RoleExistsAsync(roleName))
+            // model.Name olarak erişiyoruz
+            if (!await _roleManager.RoleExistsAsync(model.Name))
             {
-                var result = await _roleManager.CreateAsync(new IdentityRole(roleName));
+                var result = await _roleManager.CreateAsync(new IdentityRole(model.Name));
 
                 if (result.Succeeded)
                     return ServiceResult<string>.Success("Role created successfully!", 201);
@@ -42,6 +43,64 @@ namespace SarfiyumAPI.Service.Services
             }
 
             return ServiceResult<string>.Fail("Role already exists", 400);
+        }
+
+        // YENİ EKLENEN METOT
+        public async Task<ServiceResult<string>> UpdateRoleAsync(RoleDto model)
+        {
+            // 1. Güncellenecek rolü ID ile bul
+            var role = await _roleManager.FindByIdAsync(model.Id);
+            if (role == null)
+            {
+                return ServiceResult<string>.Fail("Role not found", 404);
+            }
+
+            // 2. Eğer isim değişmişse güncelle
+            if (role.Name != model.Name)
+            {
+                // (Opsiyonel) Aynı isimde başka rol var mı kontrolü
+                var roleExists = await _roleManager.RoleExistsAsync(model.Name);
+                if (roleExists)
+                {
+                    return ServiceResult<string>.Fail("Role name already exists", 400);
+                }
+
+                role.Name = model.Name;
+
+                // Identity, NormalizedName gibi alanları UpdateAsync ile otomatik halleder
+                var result = await _roleManager.UpdateAsync(role);
+
+                if (!result.Succeeded)
+                {
+                    var errors = result.Errors.Select(e => e.Description).ToList();
+                    return ServiceResult<string>.Fail(errors, 400);
+                }
+            }
+
+            return ServiceResult<string>.Success("Role updated successfully", 200);
+        }
+
+        public async Task<ServiceResult<string>> DeleteRoleAsync(string id)
+        {
+            var role = await _roleManager.FindByIdAsync(id);
+            if (role == null)
+            {
+                return ServiceResult<string>.Fail("Role not found", 404);
+            }
+
+            // (Opsiyonel Güvenlik) Admin rolünün silinmesini engelleyebilirsin
+            if (role.Name == "Admin")
+            {
+                return ServiceResult<string>.Fail("Admin rolü silinemez!", 400);
+            }
+
+            var result = await _roleManager.DeleteAsync(role);
+            if (!result.Succeeded)
+            {
+                return ServiceResult<string>.Fail("Delete failed", 400);
+            }
+
+            return ServiceResult<string>.Success("Role deleted successfully", 200);
         }
     }
 }

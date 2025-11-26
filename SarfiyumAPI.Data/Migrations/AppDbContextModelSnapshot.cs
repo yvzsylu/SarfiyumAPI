@@ -199,6 +199,9 @@ namespace SarfiyumAPI.Data.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
@@ -254,16 +257,17 @@ namespace SarfiyumAPI.Data.Migrations
                         {
                             Id = "9245fe4a-d402-451c-b9ed-9c1a04247482",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "551aa076-45a2-478c-8522-3f6a6db24676",
+                            ConcurrencyStamp = "f9169de9-dffb-456d-bfd1-136a504094d1",
                             Email = "yvzsylu@gmail.com",
                             EmailConfirmed = true,
                             FullName = "Yavuz Soylu",
+                            IsActive = true,
                             LockoutEnabled = false,
                             NormalizedEmail = "YVZSYLU@GMAIL.COM",
                             NormalizedUserName = "YVZSYLU",
-                            PasswordHash = "AQAAAAIAAYagAAAAEDocxgg78BvSDWzKL2BTdqJnScNvOu+jQMBAmc+ig7AgEf6wbEv2J+teU+W50Asi4w==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEJIpyxr9Y9laAPrlamF69J5OL/ftHRJ+iRh+sj5hYfGGUicVVQbC3Eb7s5yFXLqwiA==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "76720c6c-7334-416c-ace5-94879b5fd2e8",
+                            SecurityStamp = "e6016fc3-56f4-4bef-8be8-a61a9d4fe8c9",
                             TwoFactorEnabled = false,
                             UserName = "yvzsylu"
                         });
@@ -286,6 +290,9 @@ namespace SarfiyumAPI.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -425,12 +432,6 @@ namespace SarfiyumAPI.Data.Migrations
                                 .HasMaxLength(500)
                                 .HasColumnType("nvarchar(500)")
                                 .HasColumnName("FullAddress");
-
-                            b1.Property<string>("Street")
-                                .IsRequired()
-                                .HasMaxLength(150)
-                                .HasColumnType("nvarchar(150)")
-                                .HasColumnName("Street");
 
                             b1.Property<string>("ZipCode")
                                 .HasMaxLength(20)

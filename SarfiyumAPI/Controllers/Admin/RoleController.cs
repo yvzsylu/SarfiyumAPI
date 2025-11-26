@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SarfiyumAPI.Core.DTOs;
 using SarfiyumAPI.Core.Interfaces;
 
 namespace SarfiyumAPI.Controllers.Admin
@@ -25,9 +26,22 @@ namespace SarfiyumAPI.Controllers.Admin
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateRole([FromBody] string roleName)
+        public async Task<IActionResult> CreateRole([FromBody] CreateRoleDto model)
         {
-            return CreateActionResult(await _roleService.CreateRoleAsync(roleName));
+            return CreateActionResult(await _roleService.CreateRoleAsync(model));
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateRole([FromBody] RoleDto model)
+        {
+            // RoleDto içinde Id ve Name olmalı
+            return CreateActionResult(await _roleService.UpdateRoleAsync(model));
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteRole(string id)
+        {
+            return CreateActionResult(await _roleService.DeleteRoleAsync(id));
         }
     }
 }

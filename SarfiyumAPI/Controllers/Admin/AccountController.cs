@@ -36,6 +36,35 @@ namespace SarfiyumAPI.Controllers.Admin
             return CreateActionResult(await _accountService.AssignRoleAsync(model));
         }
 
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var result = await _accountService.GetAllUsersAsync();
+            return CreateActionResult(result);
+        }
+
+        [HttpGet("{userId}/roles")]
+        public async Task<IActionResult> GetRoles(string userId)
+        {
+            var result = await _accountService.GetUserRolesAsync(userId);
+            return CreateActionResult(result);
+        }
+
+        [HttpPost("{userId}/roles")]
+        public async Task<IActionResult> AssignRoles(string userId, [FromBody] AssignRolesDto model)
+        {
+            var result = await _accountService.UpdateUserRolesAsync(userId, model.RoleNames);
+
+            return CreateActionResult(result);
+        }
+
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusDto model)
+        {
+            return CreateActionResult(await _accountService.UpdateStatusAsync(id, model.IsActive));
+        }
+
         // NOT: Eğer "Login" işlemi herkes açıksa (ki öyledir),
         // Onu ya buraya [AllowAnonymous] ile eklemelisin 
         // ya da "Public" bir AccountController'da tutmalısın.

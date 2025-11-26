@@ -12,7 +12,6 @@ namespace SarfiyumAPI.Core.ValueObjects
     [Owned]
     public class Address
     {
-        public string Street { get; set; } = default!;   // Sokak/Cadde/Mahalle
         public string City { get; set; } = default!;     // İl
         public string District { get; set; } = default!; // İlçe
         public string Country { get; set; } = "Türkiye"; // Ülke

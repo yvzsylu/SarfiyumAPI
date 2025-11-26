@@ -8,19 +8,20 @@ namespace SarfiyumAPI.Core.DTOs
 {
     public class TenantDto
     {
-        public string? Id { get; set; } = default!;
+        public string? Id { get; set; }
         public string Name { get; set; } = default!;
         public string TaxNumber { get; set; } = default!;
         public string PhoneNumber { get; set; } = default!;
-        public string? Website { get; set; } = default!;
+        public string? Website { get; set; }
+        public string? LogoUrl { get; set; }
 
+        public bool IsActive { get; set; } 
 
-
-        // Adres Alanları
+        // Address (Flattened - Düzleştirilmiş)
         public string City { get; set; } = default!;
         public string District { get; set; } = default!;
-        public string Street { get; set; } = default!;
-        public string FullAddress { get; set; } = default!;
-        public string? ZipCode { get; set; } // EKLENDİ
+        public string? ZipCode { get; set; }
+        public string? FullAddress { get; set; }
+        public string Country { get; set; } = "Türkiye";
     }
 }

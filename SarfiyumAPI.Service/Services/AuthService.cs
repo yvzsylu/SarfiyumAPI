@@ -49,15 +49,33 @@ namespace SarfiyumAPI.Service.Services
             {
                 var userRoles = await _userManager.GetRolesAsync(user);
 
+                if (!user.IsActive)
+                {
+                    // 403 Forbidden (Erişim engellendi)
+                    return ServiceResult<string>.Fail("Hesabınız yönetici tarafından pasife alınmıştır.", 403);
+                }
+
+                if (!userRoles.Contains("Admin") && !string.IsNullOrEmpty(user.TenantId))
+                {
+                    // Firmayı veritabanından çek
+                    var tenant = await _tenantRepository.GetByIdAsync(user.TenantId);
+
+                    // KONTROL: Tenant yoksa, silinmişse veya pasifse
+                    if (tenant == null || tenant.IsDeleted || !tenant.IsActive)
+                    {
+                        return ServiceResult<string>.Fail("Bağlı olduğunuz firma hesabı aktif değildir veya silinmiştir. Lütfen yönetimle iletişime geçiniz.", 403);
+                    }
+                }
+
                 // 1. Standart Claimler
                 var authClaims = new List<Claim>
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.UserName ?? ""),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("userId", user.Id),
-            new Claim("email", user.Email ?? ""),
-            new Claim("FullName", user.FullName ?? "")
-        };
+                {
+                    new Claim(JwtRegisteredClaimNames.Sub, user.UserName ?? ""),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new Claim("userId", user.Id),
+                    new Claim("email", user.Email ?? ""),
+                    new Claim("fullName", user.FullName ?? "")
+                };
 
                 // 2. Tenant Bilgilerini Ekleme
                 // Eğer TenantId doluysa (Admin değilse), firma bilgilerini çekip ekle

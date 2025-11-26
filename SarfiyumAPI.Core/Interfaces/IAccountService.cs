@@ -13,5 +13,16 @@ namespace SarfiyumAPI.Core.Interfaces
         Task<ServiceResult<string>> CreateUserAsync(CreateUserDto model);
 
         Task<ServiceResult<string>> AssignRoleAsync(UserRoleDto model);
+
+        Task<ServiceResult<List<UserListDto>>> GetAllUsersAsync();
+
+        // 2. Bir kullanıcının mevcut rollerini getir (Frontend'deki checkbox'ları işaretlemek için)
+        Task<ServiceResult<List<string>>> GetUserRolesAsync(string userId);
+
+        // 3. Kullanıcıya rolleri ata/güncelle (Mevcut rolleri silip yenilerini ekler)
+        // Kullanılacak Identity metotları: GetRolesAsync, RemoveFromRolesAsync, AddToRolesAsync
+        Task<ServiceResult<bool>> UpdateUserRolesAsync(string userId, List<string> roleNames);
+
+        Task<ServiceResult<string>> UpdateStatusAsync(string id, bool isActive);
     }
 }

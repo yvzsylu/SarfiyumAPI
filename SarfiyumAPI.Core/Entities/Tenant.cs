@@ -15,6 +15,8 @@ namespace SarfiyumAPI.Core.Entities
         public string? Website { get; set; }
         public string? LogoUrl { get; set; }
 
+        public bool IsActive { get; set; } = true; // Varsayılan Aktif
+
         // BEST PRACTICE: Adres Bilgisi
         // Veritabanında ayrı bir tablo olmaz, Tenants tablosunda 
         // Address_City, Address_Street gibi kolonlar oluşur.

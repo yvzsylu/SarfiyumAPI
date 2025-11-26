@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using SarfiyumAPI.Core.DTOs;
 using SarfiyumAPI.Core.Entities;
 using SarfiyumAPI.Core.Interfaces;
@@ -11,15 +12,19 @@ namespace SarfiyumAPI.Service.Services
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IRepository<Tenant> _tenantRepository;
+        private readonly IDataContext _context;
+
 
         public AccountService(
             UserManager<AppUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            IRepository<Tenant> tenantRepository)
+            IRepository<Tenant> tenantRepository,
+            IDataContext context)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _tenantRepository = tenantRepository;
+            _context = context;
         }
 
         public async Task<ServiceResult<string>> CreateUserAsync(CreateUserDto model)
@@ -85,5 +90,155 @@ namespace SarfiyumAPI.Service.Services
             var errors = result.Errors.Select(e => e.Description).ToList();
             return ServiceResult<string>.Fail(errors, 400);
         }
+
+
+
+
+
+        // 1. TÜM KULLANICILARI GETİR (Tenant ve Rol Bilgileriyle)
+        public async Task<ServiceResult<List<UserListDto>>> GetAllUsersAsync()
+        {
+            // Tüm kullanıcıları çekiyoruz
+            var users = await _userManager.Users.ToListAsync();
+
+            // Tenant adlarını hızlıca lookup yapmak için dictionary oluşturuyoruz
+            // Sadece TenantId'si non-null olan kullanıcılar için Tenant adlarına bakıyoruz
+            var tenantIds = users.Where(u => !string.IsNullOrEmpty(u.TenantId)).Select(u => u.TenantId).Distinct().ToList();
+
+            // Yalnızca ilgili Tenant'ları veritabanından çekiyoruz
+            var tenantsDict = await _tenantRepository
+                .Where(t => tenantIds.Contains(t.Id) && t.IsDeleted == false)
+                .ToDictionaryAsync(t => t.Id, t => t.Name);
+
+            var userList = new List<UserListDto>();
+
+            foreach (var user in users)
+            {
+                // Identity'den kullanıcının rollerini çekiyoruz
+                var roles = await _userManager.GetRolesAsync(user);
+
+                string? currentTenantName = null;
+
+                // MANTIK HATASI DÜZELTME 1: Tenant Durumu Kontrolü
+                if (string.IsNullOrEmpty(user.TenantId))
+                {
+                    // TenantId null ise, bu kullanıcı bir Admin'dir.
+                    currentTenantName = "Sistem Yöneticisi";
+                }
+                else
+                {
+                    // MANTIK HATASI DÜZELTME 2: Tenant Adı Eşleştirmesi
+                    // TenantId doluysa, Tenant adını lookup tablosundan al.
+                    if (tenantsDict.TryGetValue(user.TenantId, out string? name))
+                    {
+                        currentTenantName = name;
+                    }
+                    else
+                    {
+                        // TenantId var ama Tenant tablosunda eşleşen yoksa (silinmiş/kayıp)
+                        currentTenantName = "Bilinmeyen/Pasif Firma";
+                    }
+                }
+
+                userList.Add(new UserListDto
+                {
+                    Id = user.Id,
+                    FullName = user.FullName,
+                    Email = user.Email,
+                    Username = user.UserName,
+                    IsActive = user.IsActive,
+                    TenantId = user.TenantId,
+                    TenantName = currentTenantName, // Artık Admin veya Firma Adı burada
+                    Roles = roles.ToList()
+                });
+            }
+
+            return ServiceResult<List<UserListDto>>.Success(userList);
+        }
+
+        // UserService.cs içinde
+
+
+        public async Task<ServiceResult<string>> UpdateStatusAsync(string id, bool isActive)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return ServiceResult<string>.Fail("Tenant not found", 404);
+
+            user.IsActive = isActive;
+            // Diğer alanlara dokunmuyoruz, sadece IsActive değişiyor.
+            // ModifiedAt otomatik güncellenecek (EntityBase).
+
+            var updateResult = await _userManager.UpdateAsync(user);
+
+            if (!updateResult.Succeeded)
+            {
+                return ServiceResult<string>.Fail(updateResult.Errors.First().Description, 500);
+            }
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<string>.Success("Status updated successfully", 200);
+        }
+
+
+        // UserService.cs içinde
+
+        // 2. KULLANICININ MEVCUT ROLLERİNİ GETİR
+        public async Task<ServiceResult<List<string>>> GetUserRolesAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                // TenantService'teki gibi Fail dönüşü
+                return ServiceResult<List<string>>.Fail("User not found", 404);
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return ServiceResult<List<string>>.Success(roles.ToList());
+        }
+
+        // 3. KULLANICININ ROLLERİNİ GÜNCELLE
+        public async Task<ServiceResult<bool>> UpdateUserRolesAsync(string userId, List<string> roleNames)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return ServiceResult<bool>.Fail("User not found", 404);
+            }
+
+            // 1. Mevcut Roller
+            var existingRoles = await _userManager.GetRolesAsync(user);
+
+            // 2. Geçersiz Rol Kontrolü (Atanmaya çalışılan roller sistemde var mı?)
+            var allSystemRoleNames = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
+            var invalidRoles = roleNames.Where(r => !allSystemRoleNames.Contains(r)).ToList();
+
+            if (invalidRoles.Any())
+            {
+                return ServiceResult<bool>.Fail($"Invalid role(s) found: {string.Join(", ", invalidRoles)}", 400);
+            }
+
+            // 3. Mevcut Rolleri Kaldır
+            var removeResult = await _userManager.RemoveFromRolesAsync(user, existingRoles);
+            if (!removeResult.Succeeded)
+            {
+                return ServiceResult<bool>.Fail(removeResult.Errors.First().Description, 500);
+            }
+
+            // 4. Yeni Rolleri Ekle (roleNames boş olabilir, bu durumda rol atanmamış olur)
+            var addResult = await _userManager.AddToRolesAsync(user, roleNames);
+            if (!addResult.Succeeded)
+            {
+                // Hata durumunda rollback yapılması gerekir. Basitlik için burada hata döndürüyoruz.
+                return ServiceResult<bool>.Fail(addResult.Errors.First().Description, 500);
+            }
+
+            return ServiceResult<bool>.Success(true);
+        }
+
+
+
+
+
     }
 }
