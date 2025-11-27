@@ -12,7 +12,7 @@ namespace SarfiyumAPI.Data.Context
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<Tenant> Tenants { get; set; }
-
+        public DbSet<AppSetting> AppSettings { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

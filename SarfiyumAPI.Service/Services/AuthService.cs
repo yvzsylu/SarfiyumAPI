@@ -23,6 +23,7 @@ namespace SarfiyumAPI.Service.Services
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
         private readonly IDataContext _context;
+        private readonly IEmailService _emailService; // Mail servisini inject ediyoruz
 
         // 2. DEĞİŞİKLİK: Tenant oluşturmak için Repository ekliyoruz
         private readonly IRepository<Tenant> _tenantRepository;
@@ -32,13 +33,15 @@ namespace SarfiyumAPI.Service.Services
             RoleManager<IdentityRole> roleManager,
             IConfiguration configuration,
             IDataContext context,
-            IRepository<Tenant> tenantRepository)
+            IRepository<Tenant> tenantRepository,
+            IEmailService emailService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _configuration = configuration;
             _context = context;
             _tenantRepository = tenantRepository;
+            _emailService = emailService;
         }
 
         public async Task<ServiceResult<string>> LoginAsync(LoginDto model)
@@ -82,7 +85,7 @@ namespace SarfiyumAPI.Service.Services
                 if (!string.IsNullOrEmpty(user.TenantId))
                 {
                     // TenantId claim'i ekle
-                    authClaims.Add(new Claim("TenantId", user.TenantId));
+                    authClaims.Add(new Claim("tenantId", user.TenantId));
 
                     // Tenant detaylarını Repository'den çekiyoruz
                     var tenant = await _tenantRepository.GetByIdAsync(user.TenantId);
@@ -90,12 +93,12 @@ namespace SarfiyumAPI.Service.Services
                     if (tenant != null)
                     {
                         // Firma Adı
-                        authClaims.Add(new Claim("TenantName", tenant.Name));
+                        authClaims.Add(new Claim("tenantName", tenant.Name));
 
                         // Firma Logosu (Eğer varsa)
                         if (!string.IsNullOrEmpty(tenant.LogoUrl))
                         {
-                            authClaims.Add(new Claim("TenantLogo", tenant.LogoUrl));
+                            authClaims.Add(new Claim("tenantLogoUrl", tenant.LogoUrl));
                         }
                     }
                 }
@@ -112,35 +115,6 @@ namespace SarfiyumAPI.Service.Services
             return ServiceResult<string>.Fail("Invalid username or password!", 401);
         }
 
-        public async Task<ServiceResult<string>> AddRoleAsync(string roleName)
-        {
-            if (!await _roleManager.RoleExistsAsync(roleName))
-            {
-                var result = await _roleManager.CreateAsync(new IdentityRole(roleName));
-                if (result.Succeeded)
-                    return ServiceResult<string>.Success("Role created successfully!", 201);
-
-                var errors = result.Errors.Select(e => e.Description).ToList();
-                return ServiceResult<string>.Fail(errors, 400);
-            }
-
-            return ServiceResult<string>.Fail("Role already exists", 400);
-        }
-
-        public async Task<ServiceResult<string>> AssignRoleAsync(UserRoleDto model)
-        {
-            var user = await _userManager.FindByNameAsync(model.Username);
-            if (user == null)
-                return ServiceResult<string>.Fail("User not found", 404);
-
-            var result = await _userManager.AddToRoleAsync(user, model.Role);
-            if (result.Succeeded)
-                return ServiceResult<string>.Success("Role assigned successfully!", 200);
-
-            var errors = result.Errors.Select(e => e.Description).ToList();
-            return ServiceResult<string>.Fail(errors, 400);
-        }
-
         private JwtSecurityToken GetToken(List<Claim> authClaims)
         {
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
@@ -152,5 +126,90 @@ namespace SarfiyumAPI.Service.Services
                 signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
             );
         }
+
+        // YENİ: Şifre Sıfırlama Mantığı
+        public async Task<ServiceResult<string>> ResetPasswordAsync(string email)
+        {
+            // 1. Kullanıcıyı Bul
+            var user = await _userManager.FindByEmailAsync(email);
+
+            // GÜVENLİK İYİLEŞTİRMESİ (User Enumeration Prevention):
+            // Kötü niyetli kişiler rastgele mailler deneyerek "Kullanıcı bulunamadı" hatası alıp
+            // sistemde kimlerin kayıtlı olduğunu öğrenemesin diye, kullanıcı yoksa bile
+            // "Varsa mail gönderildi" diyip süreci sonlandırabiliriz.
+            // ANCAK: Geliştirme aşamasında olduğun için şimdilik net hata dönmeye devam edebilirsin.
+            // Canlıya geçerken burayı "Success" dönüp işlemi kesmek daha güvenlidir.
+            if (user == null)
+                return ServiceResult<string>.Fail("Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı.", 404);
+
+            // 2. Kullanıcı Aktif mi?
+            if (!user.IsActive)
+                return ServiceResult<string>.Fail("Hesabınız pasif durumdadır.", 403);
+
+            // 3. 8 Haneli Güvenli Şifre Üret
+            string newPassword = GenerateRandomPassword(8);
+
+            // 4. Şifreyi Sıfırla
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+
+            if (!result.Succeeded)
+            {
+                return ServiceResult<string>.Fail("Şifre sıfırlama hatası: " + result.Errors.First().Description, 500);
+            }
+
+            // 5. Mail Gönder
+            try
+            {
+                string mailBody = $@"
+        <h3>Merhaba {user.FullName},</h3>
+        <p>Hesabınız için şifre sıfırlama talebinde bulunuldu.</p>
+        <p>Yeni Şifreniz: <strong style='font-size:18px; color:blue;'>{newPassword}</strong></p>
+        <p>Lütfen giriş yaptıktan sonra şifrenizi değiştiriniz.</p>
+        <br>
+        <p>Sarfiyum Yönetimi</p>";
+
+                await _emailService.SendEmailAsync(user.Email!, "Şifre Sıfırlama Bilgilendirmesi", mailBody);
+            }
+            catch (Exception ex)
+            {
+                // KRİTİK GÜVENLİK DÜZELTMESİ:
+                // Şifre veritabanında değişti ama kullanıcıya mail gitmedi.
+                // ASLA yeni şifreyi burada gösterme!
+                // Kullanıcı giriş yapamayacak ama tekrar "Şifremi Unuttum" diyerek tekrar deneyebilir.
+                // Bu durum, hesabın çalınmasından daha iyidir.
+
+                // Loglama yapmalısın (Örn: Serilog ile)
+                // _logger.LogError(ex, $"Mail gönderilemedi: {email}");
+
+                return ServiceResult<string>.Fail($"Şifre sıfırlandı ancak e-posta sunucusundaki bir hata nedeniyle size iletilemedi. Lütfen daha sonra tekrar deneyiniz veya yönetici ile iletişime geçiniz. (Hata: {ex.Message})", 500);
+            }
+
+            return ServiceResult<string>.Success("Yeni şifreniz e-posta adresinize gönderildi.", 200);
+        }
+
+        // YARDIMCI METOT: Rastgele Şifre Oluşturucu
+        private string GenerateRandomPassword(int length)
+        {
+            const string validChars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$*";
+            var random = new Random();
+            var password = new StringBuilder();
+
+            // Identity kurallarına (En az 1 büyük, 1 küçük, 1 sayı, 1 özel karakter) uyum sağlamak için garanti karakterler
+            password.Append("A"); // Büyük harf
+            password.Append("a"); // Küçük harf
+            password.Append("1"); // Rakam
+            password.Append("!"); // Özel karakter
+
+            // Kalan karakterleri rastgele doldur
+            for (int i = 4; i < length; i++)
+            {
+                password.Append(validChars[random.Next(validChars.Length)]);
+            }
+
+            // Karakterleri karıştır (Shuffle) ki hep Aa1! ile başlamasın
+            return new string(password.ToString().OrderBy(x => random.Next()).ToArray());
+        }
+
     }
 }

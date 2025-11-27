@@ -1,4 +1,5 @@
-﻿using SarfiyumAPI.Core.DTOs;
+﻿using Microsoft.AspNetCore.Http;
+using SarfiyumAPI.Core.DTOs;
 using SarfiyumAPI.Core.Wrapper;
 using System;
 using System.Collections.Generic;
@@ -17,5 +18,8 @@ namespace SarfiyumAPI.Core.Interfaces
         Task<ServiceResult<string>> DeleteAsync(string id);
 
         Task<ServiceResult<string>> UpdateStatusAsync(string id, bool isActive);
+        // IFormFile kullanabilmek için: using Microsoft.AspNetCore.Http;
+        Task<ServiceResult<string>> UploadLogoAsync(string tenantId, IFormFile file);
+
     }
 }

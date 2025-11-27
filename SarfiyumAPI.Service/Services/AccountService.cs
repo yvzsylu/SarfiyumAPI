@@ -237,7 +237,111 @@ namespace SarfiyumAPI.Service.Services
         }
 
 
+        public async Task<ServiceResult<string>> UpdateUserAsync(UserUpdateDto model)
+        {
+            // 1. KULLANICIYI BUL
+            var user = await _userManager.FindByIdAsync(model.Id);
+            if (user == null)
+            {
+                return ServiceResult<string>.Fail("Kullanıcı bulunamadı.", 404);
+            }
 
+            // 2. TENANT KONTROLÜ (Değişmişse veya yeni atanıyorsa)
+            if (!string.IsNullOrEmpty(model.TenantId))
+            {
+                var tenant = await _tenantRepository.GetByIdAsync(model.TenantId);
+                if (tenant == null)
+                    return ServiceResult<string>.Fail("Seçilen firma (Tenant) bulunamadı!", 404);
+            }
+
+            // 3. ROL KONTROLÜ (Yeni Rol ID geçerli mi?)
+            var newRole = await _roleManager.FindByIdAsync(model.RoleId);
+            if (newRole == null)
+                return ServiceResult<string>.Fail("Seçilen Rol sistemde bulunamadı!", 404);
+
+            // 4. TEMEL BİLGİLERİ GÜNCELLE
+            user.UserName = model.Username;
+            user.Email = model.Email;
+            user.FullName = model.FullName;
+            user.TenantId = model.TenantId;
+            user.IsActive = model.IsActive;
+
+            // Kullanıcıyı güncelle
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                return ServiceResult<string>.Fail(updateResult.Errors.First().Description, 400);
+            }
+
+            // 5. ŞİFRE GÜNCELLEME (Eğer dolu geldiyse)
+            if (!string.IsNullOrEmpty(model.Password))
+            {
+                // Admin yetkisiyle şifre sıfırlama token'ı alıp şifreyi değiştiriyoruz
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var passwordResult = await _userManager.ResetPasswordAsync(user, token, model.Password);
+
+                if (!passwordResult.Succeeded)
+                {
+                    return ServiceResult<string>.Fail("Şifre güncellenemedi: " + passwordResult.Errors.First().Description, 400);
+                }
+            }
+
+            // 6. ROL GÜNCELLEME
+            // Mevcut rolleri al
+            var currentRoles = await _userManager.GetRolesAsync(user);
+
+            // Eğer kullanıcının rolü değişmişse (veya hiç rolü yoksa)
+            if (!currentRoles.Contains(newRole.Name!))
+            {
+                // Eski rolleri sil
+                await _userManager.RemoveFromRolesAsync(user, currentRoles);
+
+                // Yeni rolü ata
+                await _userManager.AddToRoleAsync(user, newRole.Name!);
+            }
+
+            return ServiceResult<string>.Success("Kullanıcı başarıyla güncellendi.", 200);
+        }
+
+        public async Task<ServiceResult<UserListDto>> GetUserByIdAsync(string id)
+        {
+            // 1. Kullanıcıyı Bul
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return ServiceResult<UserListDto>.Fail("Kullanıcı bulunamadı.", 404);
+            }
+
+            // 2. Rolleri Getir
+            var roles = await _userManager.GetRolesAsync(user);
+
+            // 3. Tenant İsmini Getir (Eğer varsa)
+            string? tenantName = null;
+            if (!string.IsNullOrEmpty(user.TenantId))
+            {
+                var tenant = await _tenantRepository.GetByIdAsync(user.TenantId);
+                tenantName = tenant?.Name ?? "Bilinmeyen Firma";
+            }
+            else
+            {
+                tenantName = "Sistem Yöneticisi";
+            }
+
+            // 4. DTO'yu Oluştur
+            var userDto = new UserListDto
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                Email = user.Email!,
+                Username = user.UserName!,
+                IsActive = user.IsActive,
+                TenantId = user.TenantId,
+                TenantName = tenantName,
+                Roles = roles.ToList()
+            };
+
+            return ServiceResult<UserListDto>.Success(userDto);
+        }
 
 
     }

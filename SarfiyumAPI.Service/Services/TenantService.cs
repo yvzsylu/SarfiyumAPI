@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using SarfiyumAPI.Core.DTOs;
 using SarfiyumAPI.Core.Entities;
 using SarfiyumAPI.Core.Interfaces;
@@ -11,11 +13,12 @@ namespace SarfiyumAPI.Service.Services
     {
         private readonly IRepository<Tenant> _tenantRepository;
         private readonly IDataContext _context;
-
-        public TenantService(IRepository<Tenant> tenantRepository, IDataContext context)
+        private readonly IWebHostEnvironment _env;
+        public TenantService(IRepository<Tenant> tenantRepository, IDataContext context, IWebHostEnvironment env)
         {
             _tenantRepository = tenantRepository;
             _context = context;
+            _env = env; 
         }
 
         // 1. TÜMÜNÜ GETİR
@@ -155,6 +158,45 @@ namespace SarfiyumAPI.Service.Services
             await _context.SaveChangesAsync();
 
             return ServiceResult<string>.Success("Status updated successfully", 200);
+        }
+
+        public async Task<ServiceResult<string>> UploadLogoAsync(string tenantId, IFormFile file)
+        {
+            var tenant = await _tenantRepository.GetByIdAsync(tenantId);
+            if (tenant == null) return ServiceResult<string>.Fail("Firma bulunamadı.", 404);
+
+            if (file == null || file.Length == 0)
+                return ServiceResult<string>.Fail("Dosya seçilmedi.", 400);
+
+            // --- HATA ÇÖZÜMÜ BURADA ---
+            // WebRootPath null ise (wwwroot klasörü yoksa), ContentRootPath üzerinden oluştur.
+            string webRootPath = _env.WebRootPath ?? Path.Combine(_env.ContentRootPath, "wwwroot");
+
+            string uploadsFolder = Path.Combine(webRootPath, "uploads", "logos");
+            // --------------------------
+
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
+            // 2. Benzersiz Dosya Adı Oluştur
+            string uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            // 3. Dosyayı Kaydet
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            // 4. DB'yi Güncelle
+            // URL formatı: /uploads/logos/dosyaadi.png
+            string logoUrl = $"/uploads/logos/{uniqueFileName}";
+
+            tenant.LogoUrl = logoUrl;
+            _tenantRepository.Update(tenant);
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<string>.Success(logoUrl, 200);
         }
     }
 }

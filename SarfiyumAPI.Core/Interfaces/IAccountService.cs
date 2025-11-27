@@ -24,5 +24,9 @@ namespace SarfiyumAPI.Core.Interfaces
         Task<ServiceResult<bool>> UpdateUserRolesAsync(string userId, List<string> roleNames);
 
         Task<ServiceResult<string>> UpdateStatusAsync(string id, bool isActive);
+
+        Task<ServiceResult<string>> UpdateUserAsync(UserUpdateDto model);
+
+        Task<ServiceResult<UserListDto>> GetUserByIdAsync(string id);
     }
 }

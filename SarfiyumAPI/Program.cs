@@ -56,6 +56,11 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<ITenantService, TenantService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ISettingsService, SettingsService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
+
+
 
 // --------------------------------------------
 
@@ -117,7 +122,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseStaticFiles();
 // --- CORS MIDDLEWARE'Ý ---
 app.UseCors("AllowAngularApp");
 // ------------------------

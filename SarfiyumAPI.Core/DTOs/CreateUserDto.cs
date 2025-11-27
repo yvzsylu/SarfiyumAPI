@@ -13,7 +13,6 @@ namespace SarfiyumAPI.Core.DTOs
         public string Password { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
 
-        // DEĞİŞİKLİK: Artık Role Name değil, Role Id alıyoruz
         public string RoleId { get; set; } = string.Empty;
 
         public string? TenantId { get; set; }  

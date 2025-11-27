@@ -176,6 +176,76 @@ namespace SarfiyumAPI.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("SarfiyumAPI.Core.Entities.AppSetting", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("CreatedByName")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("ModifiedByName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RemovedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("RemovedByName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("SmtpDisplayName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SmtpEmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("SmtpEnableSsl")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SmtpHost")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SmtpPassword")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SmtpPort")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AppSettings");
+                });
+
             modelBuilder.Entity("SarfiyumAPI.Core.Entities.AppUser", b =>
                 {
                     b.Property<string>("Id")
@@ -257,7 +327,7 @@ namespace SarfiyumAPI.Data.Migrations
                         {
                             Id = "9245fe4a-d402-451c-b9ed-9c1a04247482",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "f9169de9-dffb-456d-bfd1-136a504094d1",
+                            ConcurrencyStamp = "caaaf99b-5e4d-49ff-a045-ac45c04af10b",
                             Email = "yvzsylu@gmail.com",
                             EmailConfirmed = true,
                             FullName = "Yavuz Soylu",
@@ -265,9 +335,9 @@ namespace SarfiyumAPI.Data.Migrations
                             LockoutEnabled = false,
                             NormalizedEmail = "YVZSYLU@GMAIL.COM",
                             NormalizedUserName = "YVZSYLU",
-                            PasswordHash = "AQAAAAIAAYagAAAAEJIpyxr9Y9laAPrlamF69J5OL/ftHRJ+iRh+sj5hYfGGUicVVQbC3Eb7s5yFXLqwiA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEMdmr81vSf9DG59McLdUz7o3qDRcA8wgaYX1J7ppAwAd/lv0tLdwLuVGcv1latVg1Q==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "e6016fc3-56f4-4bef-8be8-a61a9d4fe8c9",
+                            SecurityStamp = "d007bfab-472f-4c3c-b439-9366ab034f23",
                             TwoFactorEnabled = false,
                             UserName = "yvzsylu"
                         });

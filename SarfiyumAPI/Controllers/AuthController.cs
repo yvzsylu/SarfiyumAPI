@@ -24,6 +24,14 @@ namespace SarfiyumAPI.Controllers
         {
             return CreateActionResult(await _authService.LoginAsync(model));
         }
+
+        [AllowAnonymous] // Şifresini unutan kişi login değildir
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto model)
+        {
+            return CreateActionResult(await _authService.ResetPasswordAsync(model.Email));
+        }
+
     }
 
 

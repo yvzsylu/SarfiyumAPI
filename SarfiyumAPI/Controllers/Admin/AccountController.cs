@@ -36,7 +36,7 @@ namespace SarfiyumAPI.Controllers.Admin
             return CreateActionResult(await _accountService.AssignRoleAsync(model));
         }
 
-
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -44,6 +44,7 @@ namespace SarfiyumAPI.Controllers.Admin
             return CreateActionResult(result);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("{userId}/roles")]
         public async Task<IActionResult> GetRoles(string userId)
         {
@@ -51,6 +52,7 @@ namespace SarfiyumAPI.Controllers.Admin
             return CreateActionResult(result);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("{userId}/roles")]
         public async Task<IActionResult> AssignRoles(string userId, [FromBody] AssignRolesDto model)
         {
@@ -59,12 +61,25 @@ namespace SarfiyumAPI.Controllers.Admin
             return CreateActionResult(result);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusDto model)
         {
             return CreateActionResult(await _accountService.UpdateStatusAsync(id, model.IsActive));
         }
 
+        [Authorize(Roles = "Admin")]
+        [HttpPut("update-user")]
+        public async Task<IActionResult> UpdateUser([FromBody] UserUpdateDto model)
+        {
+            return CreateActionResult(await _accountService.UpdateUserAsync(model));
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(string id)
+        {
+            return CreateActionResult(await _accountService.GetUserByIdAsync(id));
+        }
         // NOT: Eğer "Login" işlemi herkes açıksa (ki öyledir),
         // Onu ya buraya [AllowAnonymous] ile eklemelisin 
         // ya da "Public" bir AccountController'da tutmalısın.

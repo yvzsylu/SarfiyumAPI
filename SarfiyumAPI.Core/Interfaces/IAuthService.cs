@@ -12,7 +12,7 @@ namespace SarfiyumAPI.Core.Interfaces
     {
         // Dönüş tipleri ServiceResult<T> ile sarıldı
         Task<ServiceResult<string>> LoginAsync(LoginDto model); // Token string döner
-        Task<ServiceResult<string>> AddRoleAsync(string roleName);
-        Task<ServiceResult<string>> AssignRoleAsync(UserRoleDto model);
+        Task<ServiceResult<string>> ResetPasswordAsync(string email);
+
     }
 }
