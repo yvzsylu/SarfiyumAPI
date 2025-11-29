@@ -327,7 +327,7 @@ namespace SarfiyumAPI.Data.Migrations
                         {
                             Id = "9245fe4a-d402-451c-b9ed-9c1a04247482",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "caaaf99b-5e4d-49ff-a045-ac45c04af10b",
+                            ConcurrencyStamp = "dd4617cc-3359-4737-a761-4be687ff5980",
                             Email = "yvzsylu@gmail.com",
                             EmailConfirmed = true,
                             FullName = "Yavuz Soylu",
@@ -335,12 +335,134 @@ namespace SarfiyumAPI.Data.Migrations
                             LockoutEnabled = false,
                             NormalizedEmail = "YVZSYLU@GMAIL.COM",
                             NormalizedUserName = "YVZSYLU",
-                            PasswordHash = "AQAAAAIAAYagAAAAEMdmr81vSf9DG59McLdUz7o3qDRcA8wgaYX1J7ppAwAd/lv0tLdwLuVGcv1latVg1Q==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEH4RmQe4z64J4+Lqd1j4YWvjhmSH+UtwsUGPU28fgaGwXy5p/5tTe6716OYby61JGQ==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "d007bfab-472f-4c3c-b439-9366ab034f23",
+                            SecurityStamp = "d9ff5093-332e-4fa5-87d6-945875e1cca2",
                             TwoFactorEnabled = false,
                             UserName = "yvzsylu"
                         });
+                });
+
+            modelBuilder.Entity("SarfiyumAPI.Core.Entities.Symbol", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("CreatedByName")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("ModifiedByName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RemovedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("RemovedByName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("SymbolCategoryId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("SymbolCategoryId");
+
+                    b.ToTable("Symbols");
+                });
+
+            modelBuilder.Entity("SarfiyumAPI.Core.Entities.SymbolCategory", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("CreatedByName")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("ModifiedByName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RemovedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("RemovedByName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("SymbolCategories");
                 });
 
             modelBuilder.Entity("SarfiyumAPI.Core.Entities.Tenant", b =>
@@ -412,6 +534,81 @@ namespace SarfiyumAPI.Data.Migrations
                     b.ToTable("Tenants");
                 });
 
+            modelBuilder.Entity("SarfiyumAPI.Core.Entities.TenantMultiplier", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<decimal>("AddonAmount")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<decimal>("BuyMultiplier")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("CreatedByName")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("ModifiedByName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RemovedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("RemovedByName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<decimal>("SellMultiplier")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<string>("SymbolId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("TenantId")
+                        .IsRequired()
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SymbolId");
+
+                    b.HasIndex("TenantId", "SymbolId")
+                        .IsUnique();
+
+                    b.ToTable("TenantMultipliers");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -473,6 +670,17 @@ namespace SarfiyumAPI.Data.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("SarfiyumAPI.Core.Entities.Symbol", b =>
+                {
+                    b.HasOne("SarfiyumAPI.Core.Entities.SymbolCategory", "Category")
+                        .WithMany("Symbols")
+                        .HasForeignKey("SymbolCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("SarfiyumAPI.Core.Entities.Tenant", b =>
                 {
                     b.OwnsOne("SarfiyumAPI.Core.ValueObjects.Address", "Address", b1 =>
@@ -518,6 +726,27 @@ namespace SarfiyumAPI.Data.Migrations
 
                     b.Navigation("Address")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("SarfiyumAPI.Core.Entities.TenantMultiplier", b =>
+                {
+                    b.HasOne("SarfiyumAPI.Core.Entities.Symbol", "Symbol")
+                        .WithMany("TenantMultipliers")
+                        .HasForeignKey("SymbolId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Symbol");
+                });
+
+            modelBuilder.Entity("SarfiyumAPI.Core.Entities.Symbol", b =>
+                {
+                    b.Navigation("TenantMultipliers");
+                });
+
+            modelBuilder.Entity("SarfiyumAPI.Core.Entities.SymbolCategory", b =>
+                {
+                    b.Navigation("Symbols");
                 });
 
             modelBuilder.Entity("SarfiyumAPI.Core.Entities.Tenant", b =>

@@ -1,57 +1,66 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+ï»¿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SarfiyumAPI.Core.Entities;
-
-// --- EKLENEN NAMESPACE'LER (Bu sýnýflarý tanýmasý için þart) ---
-using SarfiyumAPI.Core.Interfaces;   // IAuthService, IRepository, IDataContext için
+using SarfiyumAPI.Core.Interfaces;
 using SarfiyumAPI.Data.Context;
-using SarfiyumAPI.Data.Repositories; // Repository implementation için
-using SarfiyumAPI.Service.Services;  // AuthService implementation için
+using SarfiyumAPI.Data.Repositories;
+using SarfiyumAPI.Service.Services;
+using SarfiyumAPI.Services; // HostedService buradaydÄ±
+using SarfiyumAPI.Hubs;     // ðŸ”¥ EKLENDÄ°: GoldHub'Ä± tanÄ±masÄ± iÃ§in
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-// -------------------------------------------------------------
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ==================================================================
+// 1. TEMEL KONFÄ°GÃœRASYONLAR
+// ==================================================================
 
 builder.Services.AddControllers();
 builder.Services.AddRouting(options =>
 {
-    options.LowercaseUrls = true; // api/admin/Role -> api/admin/role olur
+    options.LowercaseUrls = true;
 });
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
+// ==================================================================
+// 2. IDENTITY & AUTHENTICATION
+// ==================================================================
 
-builder.Services.AddIdentity<AppUser, IdentityRole>(
-    options =>
-    {
-        options.Password.RequireDigit = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequireUppercase = true;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequiredLength = 6;
-    })
+builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 6;
+})
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-// --- HATA ÇÖZÜMÜ ÝÇÝN EKLENEN SERVÝSLER ---
-// Bu bölüm Identity'den sonra, Authentication'dan önce olmalýdýr.
+// ==================================================================
+// 3. REAL-TIME & CACHING (Sarfiyum Motoru)
+// ==================================================================
 
-// 1. IDataContext istendiðinde AppDbContext ver.
+builder.Services.AddSignalR(); // SignalR servisi
+builder.Services.AddMemoryCache(); // Tenant ayarlarÄ± iÃ§in RAM Ã¶nbellek
+
+// ==================================================================
+// 4. DEPENDENCY INJECTION (Servis KayÄ±tlarÄ±)
+// ==================================================================
+
+// Database Context & Repository
 builder.Services.AddScoped<IDataContext>(provider => provider.GetService<AppDbContext>());
-
-// 2. Generic Repository Tanýmlamasý
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-// 3. AuthService Tanýmlamasý (Hatanýn asýl kaynaðý burasýydý)
+// Logic Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
@@ -60,22 +69,25 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 
+// ðŸ”¥ EKLENEN KRÄ°TÄ°K SERVÄ°SLER ðŸ”¥
+builder.Services.AddScoped<ISymbolService, SymbolService>(); // Sembol EÅŸitleme
+builder.Services.AddScoped<ITenantSettingsService, TenantSettingsService>(); // Ã‡arpan Hesaplama Logic'i
 
+// Background Worker (Motor)
+builder.Services.AddHostedService<GoldPriceHostedService>();
 
-// --------------------------------------------
+// ==================================================================
+// 5. JWT AYARLARI
+// ==================================================================
 
-
-builder.Services.AddAuthentication(
-    options =>
-    {
-        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-    })
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
     .AddJwtBearer(options =>
     {
-        //options.SaveToken = true;
-        //options.RequireHttpsMetadata = false;
         options.TokenValidationParameters = new TokenValidationParameters()
         {
             ValidateIssuer = true,
@@ -86,13 +98,25 @@ builder.Services.AddAuthentication(
             IssuerSigningKey = new SymmetricSecurityKey(
                 System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]!)),
 
-
-            // Identity ve [Authorize] ile uyumlu claim mapping
             NameClaimType = JwtRegisteredClaimNames.Sub,
             RoleClaimType = ClaimTypes.Role
         };
-    });
 
+        // SignalR Token'Ä± QueryString'den okumasÄ± iÃ§in (Angular BaÄŸlantÄ±sÄ± Ä°Ã§in Åžart)
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/goldhub"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
+    });
 
 builder.Services.AddAuthorization(options =>
 {
@@ -100,21 +124,38 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
 });
 
+// ==================================================================
+// 6. CORS (ANGULAR BAÄžLANTISI)
+// ==================================================================
 
-builder.Services.AddCors(options =>
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("AllowAngularApp", policy =>
+//    {
+//        policy.WithOrigins("http://localhost:4200") // Angular Adresin
+//              .AllowAnyHeader()
+//              .AllowAnyMethod()
+//              .AllowCredentials(); // ðŸ”¥ SÄ°NYALR Ä°Ã‡Ä°N BU ZORUNLUDUR! Yoksa hata alÄ±rsÄ±n.
+//    });
+//});
+
+builder.Services.AddCors(options =>                    // ðŸ”¥ TEST SÃœRESÄ°NCE HERKESE Ä°ZÄ°N VER
 {
-    options.AddPolicy("AllowAngularApp",
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:4200")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod();
-        });
+    options.AddPolicy("AllowAngularApp", policy =>
+    {
+        policy.SetIsOriginAllowed(origin => true) // ðŸ”¥ HERKESE Ä°ZÄ°N VER (Test bitene kadar)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ==================================================================
+// 7. MIDDLEWARE PIPELINE
+// ==================================================================
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -123,14 +164,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-// --- CORS MIDDLEWARE'Ý ---
-app.UseCors("AllowAngularApp");
-// ------------------------
+
+app.UseCors("AllowAngularApp"); // En Ã¼stlerde olmasÄ± iyidir
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 app.MapControllers();
+
+// ðŸ”¥ SIGNALR KAPIYI AÃ‡IYORUZ ðŸ”¥
+app.MapHub<GoldHub>("/goldhub");
 
 app.Run();
