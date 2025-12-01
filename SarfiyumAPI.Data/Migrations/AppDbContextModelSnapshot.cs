@@ -327,7 +327,7 @@ namespace SarfiyumAPI.Data.Migrations
                         {
                             Id = "9245fe4a-d402-451c-b9ed-9c1a04247482",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "dd4617cc-3359-4737-a761-4be687ff5980",
+                            ConcurrencyStamp = "f5b50993-7f0d-4bcf-8648-c9e795b62a95",
                             Email = "yvzsylu@gmail.com",
                             EmailConfirmed = true,
                             FullName = "Yavuz Soylu",
@@ -335,9 +335,9 @@ namespace SarfiyumAPI.Data.Migrations
                             LockoutEnabled = false,
                             NormalizedEmail = "YVZSYLU@GMAIL.COM",
                             NormalizedUserName = "YVZSYLU",
-                            PasswordHash = "AQAAAAIAAYagAAAAEH4RmQe4z64J4+Lqd1j4YWvjhmSH+UtwsUGPU28fgaGwXy5p/5tTe6716OYby61JGQ==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEFfXYnW27NubeLcCUf9XFFi6cbTNoYQdRE+mi3iR/3y6enN1KTJCeTvo24kPJ6YZGQ==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "d9ff5093-332e-4fa5-87d6-945875e1cca2",
+                            SecurityStamp = "f275966c-462a-45f9-afa6-55317ced98ef",
                             TwoFactorEnabled = false,
                             UserName = "yvzsylu"
                         });
@@ -541,10 +541,10 @@ namespace SarfiyumAPI.Data.Migrations
                         .HasColumnType("nvarchar(36)");
 
                     b.Property<decimal>("AddonAmount")
-                        .HasColumnType("decimal(18,4)");
+                        .HasColumnType("decimal(18,10)");
 
                     b.Property<decimal>("BuyMultiplier")
-                        .HasColumnType("decimal(18,4)");
+                        .HasColumnType("decimal(18,10)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -587,7 +587,7 @@ namespace SarfiyumAPI.Data.Migrations
                         .HasColumnType("nvarchar(250)");
 
                     b.Property<decimal>("SellMultiplier")
-                        .HasColumnType("decimal(18,4)");
+                        .HasColumnType("decimal(18,10)");
 
                     b.Property<string>("SymbolId")
                         .IsRequired()

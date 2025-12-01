@@ -29,7 +29,39 @@ namespace SarfiyumAPI.Controllers.Admin
             return CreateActionResult(await _symbolService.SyncManualAsync(data));
         }
 
-        // NOT: İleride "Tüm Sembolleri Listele" (GetAll) gibi ihtiyaçların olursa
-        // Önce ISymbolService'e metodunu ekleyip sonra buraya [HttpGet] olarak ekleyebilirsin.
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            return CreateActionResult(await _symbolService.GetAllAsync());
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(string id)
+        {
+            return CreateActionResult(await _symbolService.GetByIdAsync(id));
+        }
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] CreateUpdateSymbolDto model)
+        {
+            return CreateActionResult(await _symbolService.CreateAsync(model));
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(string id, [FromBody] CreateUpdateSymbolDto model)
+        {
+            return CreateActionResult(await _symbolService.UpdateAsync(id, model));
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(string id)
+        {
+            return CreateActionResult(await _symbolService.DeleteAsync(id));
+        }
+
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> ToggleStatus(string id)
+        {
+            return CreateActionResult(await _symbolService.ToggleStatusAsync(id));
+        }
     }
 }

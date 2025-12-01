@@ -136,5 +136,131 @@ namespace SarfiyumAPI.Service.Services
 
             return ServiceResult<string>.Success($"Sync Tamamlandı: {addedCount} yeni eklendi, {updatedCount} güncellendi.", 200);
         }
+
+        public async Task<ServiceResult<List<SymbolDto>>> GetAllAsync()
+        {
+            // Repository'deki Where metodunu kullanarak IQueryable alıyoruz.
+            // Bu sayede .Include() ekleyebiliyoruz.
+            var symbols = await _symbolRepository
+                .Where(x => !x.IsDeleted) // IQueryable döner
+                .Include(s => s.Category) // Category tablosunu JOIN'le
+                .OrderBy(s => s.Category.Name)
+                .ThenBy(s => s.Name)
+                .ToListAsync(); // Veritabanına sorguyu şimdi at
+
+            // Mapping
+            var dtos = symbols.Select(s => new SymbolDto
+            {
+                Id = s.Id,
+                Name = s.Name,
+                CategoryId = s.SymbolCategoryId,
+                CategoryName = s.Category?.Name ?? "-",
+                IsActive = s.IsActive
+            }).ToList();
+
+            return ServiceResult<List<SymbolDto>>.Success(dtos);
+        }
+
+        // 2. YENİ SEMBOL EKLEME
+        public async Task<ServiceResult<string>> CreateAsync(CreateUpdateSymbolDto model)
+        {
+            // Aynı isimde var mı? (Repository Where kullanarak)
+            var exists = await _symbolRepository
+                .Where(x => x.Name == model.Name && !x.IsDeleted)
+                .AnyAsync();
+
+            if (exists) return ServiceResult<string>.Fail("Bu sembol zaten mevcut.", 400);
+
+            var symbol = new Symbol
+            {
+                Name = model.Name,
+                SymbolCategoryId = model.CategoryId,
+                IsActive = model.IsActive,
+                CreatedByName = "Admin",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _symbolRepository.AddAsync(symbol);
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<string>.Success(symbol.Id, 201);
+        }
+
+        // 3. SEMBOL GÜNCELLEME
+        public async Task<ServiceResult<string>> UpdateAsync(string id, CreateUpdateSymbolDto model)
+        {
+            var symbol = await _symbolRepository.GetByIdAsync(id);
+            if (symbol == null || symbol.IsDeleted)
+                return ServiceResult<string>.Fail("Sembol bulunamadı.", 404);
+
+            symbol.Name = model.Name;
+            symbol.SymbolCategoryId = model.CategoryId;
+            symbol.IsActive = model.IsActive;
+            symbol.ModifiedAt = DateTime.UtcNow;
+            symbol.ModifiedByName = "Admin";
+
+            _symbolRepository.Update(symbol);
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<string>.Success("Sembol güncellendi.", 200);
+        }
+
+        // 4. SEMBOL SİLME (Soft Delete)
+        public async Task<ServiceResult<string>> DeleteAsync(string id)
+        {
+            var symbol = await _symbolRepository.GetByIdAsync(id);
+            if (symbol == null)
+                return ServiceResult<string>.Fail("Sembol bulunamadı.", 404);
+
+            symbol.IsDeleted = true;
+            symbol.RemovedAt = DateTime.UtcNow;
+            symbol.RemovedByName = "Admin";
+
+            _symbolRepository.Update(symbol);
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<string>.Success("Sembol silindi.", 200);
+        }
+
+        // 5. DURUM DEĞİŞTİRME (Aktif/Pasif)
+        public async Task<ServiceResult<string>> ToggleStatusAsync(string id)
+        {
+            var symbol = await _symbolRepository.GetByIdAsync(id);
+            if (symbol == null)
+                return ServiceResult<string>.Fail("Sembol bulunamadı.", 404);
+
+            symbol.IsActive = !symbol.IsActive;
+            _symbolRepository.Update(symbol);
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<string>.Success($"Durum değiştirildi: {(symbol.IsActive ? "Aktif" : "Pasif")}", 200);
+        }
+
+        public async Task<ServiceResult<SymbolDto>> GetByIdAsync(string id)
+        {
+            // Repository'nin 'Where' metodunu kullanıyoruz ki 'Include' yapabilelim.
+            // Standart GetByIdAsync genelde Include desteklemez.
+            var symbol = await _symbolRepository
+                .Where(x => x.Id == id && !x.IsDeleted)
+                .Include(s => s.Category) // Kategori ismini de görelim
+                .FirstOrDefaultAsync();
+
+            if (symbol == null)
+                return ServiceResult<SymbolDto>.Fail("Sembol bulunamadı.", 404);
+
+            // DTO Mapping
+            var dto = new SymbolDto
+            {
+                Id = symbol.Id,
+                Name = symbol.Name,
+                CategoryId = symbol.SymbolCategoryId,
+                CategoryName = symbol.Category?.Name ?? "-",
+                IsActive = symbol.IsActive
+            };
+
+            return ServiceResult<SymbolDto>.Success(dto);
+        }
+
+
     }
 }

@@ -68,13 +68,13 @@ namespace SarfiyumAPI.Data.Context
 
             // Decimal hassasiyetleri
             builder.Entity<TenantMultiplier>()
-                .Property(p => p.BuyMultiplier).HasColumnType("decimal(18,4)");
+                .Property(p => p.BuyMultiplier).HasColumnType("decimal(18,10)");
 
             builder.Entity<TenantMultiplier>()
-                .Property(p => p.SellMultiplier).HasColumnType("decimal(18,4)");
+                .Property(p => p.SellMultiplier).HasColumnType("decimal(18,10)");
 
             builder.Entity<TenantMultiplier>()
-                .Property(p => p.AddonAmount).HasColumnType("decimal(18,4)");
+                .Property(p => p.AddonAmount).HasColumnType("decimal(18,10)");
 
             // =========================================================================
             //  GLOBAL QUERY FILTERS (SOFT DELETE)

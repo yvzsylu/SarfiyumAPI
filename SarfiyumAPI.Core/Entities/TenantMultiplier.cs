@@ -27,15 +27,13 @@ namespace SarfiyumAPI.Core.Entities
         // --- ÇARPAN AYARLARI ---
 
         // Alış Çarpanı (Örn: 1.05)
-        [Column(TypeName = "decimal(18, 4)")]
-        public decimal BuyMultiplier { get; set; } = 1.0000m;
-
+        [Column(TypeName = "decimal(18, 10)")]
+        public decimal BuyMultiplier { get; set; } = 1.0000000000m;
         // Satış Çarpanı (Örn: 1.05)
-        [Column(TypeName = "decimal(18, 4)")]
-        public decimal SellMultiplier { get; set; } = 1.0000m;
-
+        [Column(TypeName = "decimal(18, 10)")]
+        public decimal SellMultiplier { get; set; } = 1.0000000000m;
         // Sabit Makas (Örn: +10 TL ekle)
-        [Column(TypeName = "decimal(18, 4)")]
+        [Column(TypeName = "decimal(18, 10)")]
         public decimal AddonAmount { get; set; } = 0m;
 
         // Tenant bu sembolü panelinde görmek istemeyebilir
