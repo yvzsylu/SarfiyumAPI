@@ -13,5 +13,7 @@ namespace SarfiyumAPI.Core.Entities
         public bool IsActive { get; set; } = true;
         public string? TenantId { get; set; } = default!;
         public Tenant? Tenant { get; set; } = default!;
+
+
     }
 }

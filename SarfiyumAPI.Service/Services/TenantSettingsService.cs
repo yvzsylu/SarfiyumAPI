@@ -9,151 +9,214 @@ namespace SarfiyumAPI.Service.Services
 {
     public class TenantSettingsService : ITenantSettingsService
     {
-        private readonly IRepository<TenantMultiplier> _multiplierRepository;
-        private readonly IRepository<Symbol> _symbolRepository;// 🔥 Repository Eklendi
+        // Eski Repositoryler silindi. Yerine TenantProduct geldi.
+        private readonly IRepository<TenantProduct> _productRepository;
+        private readonly IRepository<TenantProductCategory> _categoryRepository;
+
         private readonly IDataContext _context;
         private readonly IMemoryCache _cache;
 
         public TenantSettingsService(
-            IRepository<TenantMultiplier> multiplierRepository,
+            IRepository<TenantProduct> productRepository,
             IDataContext context,
             IMemoryCache cache,
-            IRepository<Symbol> symbolRepository)
+            IRepository<TenantProductCategory> categoryRepository)
         {
-            _multiplierRepository = multiplierRepository;
+            _productRepository = productRepository;
             _context = context;
             _cache = cache;
-            _symbolRepository = symbolRepository;
+            _categoryRepository = categoryRepository;
         }
 
-        public async Task<Dictionary<string, TenantMultiplier>> GetMultipliersAsync(string tenantId)
+        // 1. WORKER SERVICE İÇİN CACHE'Lİ LİSTE GETİRME
+        // (GoldPriceHostedService bunu kullanacak)
+        public async Task<List<TenantProduct>> GetProductsAsync(string tenantId)
         {
-            string cacheKey = $"Multiplier_{tenantId}";
+            string cacheKey = $"TenantProducts_{tenantId}";
 
             // 1. Cache Kontrolü
-            if (!_cache.TryGetValue(cacheKey, out Dictionary<string, TenantMultiplier> multipliers))
+            if (!_cache.TryGetValue(cacheKey, out List<TenantProduct> products))
             {
-                // 2. Repository üzerinden veriyi çek
-                // Sembol ismine ihtiyacımız olduğu için .Include(x => x.Symbol) yapıyoruz.
-
-                // NOT: IRepository implementasyonunun IQueryable döndürdüğünü varsayıyoruz (TenantService örneğindeki Where kullanımı gibi)
-                var list = await _multiplierRepository
-                    .Where(tm => tm.TenantId == tenantId && tm.IsActive)
-                    .Include(tm => tm.Symbol) // Symbol tablosunu JOIN'le
+                // 2. Cache yoksa DB'den çek
+                // Kategori bilgisiyle beraber çekiyoruz (Sıralama için önemli)
+                products = await _productRepository
+                    .Where(x => x.TenantId == tenantId && x.IsActive) // Sadece aktifler
+                    .Include(x => x.TenantProductCategory)
+                    .OrderBy(x => x.TenantProductCategory.OrderIndex) // Önce kategori sırası
+                    .ThenBy(x => x.OrderIndex)                        // Sonra ürün sırası
                     .ToListAsync();
 
-                // 3. Dictionary'e çevir (Key: "ALTIN", Value: Ayarlar)
-                multipliers = list.ToDictionary(x => x.Symbol.Name, x => x);
-
-                // 4. Cache Ayarları
+                // 3. Cache'e at (1 Saat)
                 var cacheOptions = new MemoryCacheEntryOptions()
-                    .SetSlidingExpiration(TimeSpan.FromHours(1)); // 1 saat kullanılmazsa sil
+                    .SetSlidingExpiration(TimeSpan.FromHours(1))
+                    .SetPriority(CacheItemPriority.High);
 
-                _cache.Set(cacheKey, multipliers, cacheOptions);
+                _cache.Set(cacheKey, products, cacheOptions);
             }
 
-            return multipliers;
+            return products;
         }
 
-        public void ClearCache(string tenantId)
-        {
-            _cache.Remove($"Multiplier_{tenantId}");
-        }
-
-        // ... Mevcut GetMultipliersAsync ve ClearCache metodları kalsın ...
-
-        // 1. EKRANA VERİ BASMA (LEFT JOIN MANTIĞI)
+        // 2. UI (ANGULAR) İÇİN AYARLARI GETİRME
+        // (Tenant paneline girdiği zaman göreceği liste)
         public async Task<ServiceResult<List<TenantSettingResponseDto>>> GetSettingsForUIAsync(string tenantId)
         {
-            // A. Tüm Aktif Sembolleri Çek (Sol Tablo)
-            // Sembolleri Repository'den çekmelisin. Constructor'a IRepository<Symbol> eklemeyi unutma!
-            // Eğer yoksa _context üzerinden çekebilirsin ama repository pattern daha doğru.
-            // Varsayım: IRepository<Symbol> _symbolRepository Constructor'a eklendi.
+            // Burada cache kullanmaya gerek yok, admin paneli anlık veri görsün.
+            // Ayrıca pasif olanları da görebilmeli ki tekrar açabilsin.
 
-            var allSymbols = await _symbolRepository
-                .Where(s => s.IsActive && !s.IsDeleted)
-                .Include(s => s.Category)
+            var products = await _productRepository
+                .Where(x => x.TenantId == tenantId) // IsActive filtresi YOK, hepsini görsün
+                .Include(x => x.TenantProductCategory)
+                .OrderBy(x => x.TenantProductCategory.OrderIndex)
+                .ThenBy(x => x.OrderIndex)
                 .ToListAsync();
 
-            // B. Tenant'ın Kayıtlı Ayarlarını Çek (Sağ Tablo)
-            var tenantSettings = await _multiplierRepository
-                .Where(t => t.TenantId == tenantId && !t.IsDeleted)
-                .ToListAsync();
-
-            // C. Birleştirme (Mapping)
-            var resultList = new List<TenantSettingResponseDto>();
-
-            foreach (var sym in allSymbols)
+            // Entity -> DTO Dönüşümü
+            var responseList = products.Select(p => new TenantSettingResponseDto
             {
-                // Tenant'ın bu sembol için ayarı var mı?
-                var setting = tenantSettings.FirstOrDefault(x => x.SymbolId == sym.Id);
+                Id = p.Id,                 // Artık Product ID önemli
+                Name = p.Name,             // "22 Ayar Ajda"
+                SourceKey = p.SourceKey,   // "ALTIN"
+                CategoryName = p.TenantProductCategory?.Name ?? "Diğer",
+                CategoryId = p.TenantProductCategoryId,
+                BuyMultiplier = p.BuyMultiplier,
+                SellMultiplier = p.SellMultiplier,
+                AddonAmount = p.AddonAmount,
+                IsActive = p.IsActive
+            }).ToList();
 
-                resultList.Add(new TenantSettingResponseDto
-                {
-                    SymbolId = sym.Id,
-                    SymbolName = sym.Name,
-                    CategoryName = sym.Category?.Name ?? "Genel",
-
-                    // Ayar varsa onu koy, yoksa VARSAYILAN değerleri koy
-                    BuyMultiplier = setting != null ? setting.BuyMultiplier : 1.0000m,
-                    SellMultiplier = setting != null ? setting.SellMultiplier : 1.0000m,
-                    AddonAmount = setting != null ? setting.AddonAmount : 0.0000m
-                });
-            }
-
-            // Kategoriye göre sırala
-            var orderedList = resultList.OrderBy(x => x.CategoryName).ThenBy(x => x.SymbolName).ToList();
-
-            return ServiceResult<List<TenantSettingResponseDto>>.Success(orderedList);
+            return ServiceResult<List<TenantSettingResponseDto>>.Success(responseList);
         }
 
-        // 2. AYARLARI KAYDETME
-        public async Task<ServiceResult<string>> UpdateSettingsAsync(string tenantId, List<UpdateTenantSettingDto> updates)
+        // 3. UI: KATEGORİ LİSTESİ (Dropdown İçin)
+        public async Task<ServiceResult<List<TenantProductCategoryDto>>> GetCategoriesAsync(string tenantId)
         {
-            // Tenant'ın mevcut ayarlarını çek
-            var existingSettings = await _multiplierRepository
+            var categories = await _categoryRepository
+                .Where(c => c.TenantId == tenantId && c.IsActive)
+                .OrderBy(c => c.OrderIndex)
+                .ToListAsync();
+
+            var dtos = categories.Select(c => new TenantProductCategoryDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                OrderIndex = c.OrderIndex
+            }).ToList();
+
+            return ServiceResult<List<TenantProductCategoryDto>>.Success(dtos);
+        }
+
+        // 4. UI: YENİ ÜRÜN EKLEME
+        public async Task<ServiceResult<string>> CreateProductAsync(string tenantId, CreateTenantProductDto model)
+        {
+            // Kategori kontrolü (Tenant'a ait mi?)
+            var category = await _categoryRepository
+                .Where(c => c.Id == model.CategoryId && c.TenantId == tenantId)
+                .FirstOrDefaultAsync();
+
+            if (category == null)
+                return ServiceResult<string>.Fail("Geçersiz kategori.", 400);
+
+            var newProduct = new TenantProduct
+            {
+                TenantId = tenantId,
+                TenantProductCategoryId = model.CategoryId,
+                Name = model.Name,
+                SourceKey = model.SourceKey, // Örn: "ALTIN"
+
+                BuyMultiplier = model.BuyMultiplier,
+                SellMultiplier = model.SellMultiplier,
+                AddonAmount = model.AddonAmount,
+
+                OrderIndex = model.OrderIndex,
+                IsActive = true
+            };
+
+            await _productRepository.AddAsync(newProduct);
+            await _context.SaveChangesAsync();
+
+            ClearCache(tenantId); // Worker yeni ürünü görsün
+
+            return ServiceResult<string>.Success(newProduct.Id, 201);
+        }
+
+
+        // 5. UI: TOPLU GÜNCELLEME (İsimler ve Çarpanlar)
+        // Metod ismini 'UpdateProductsAsync' yaptım ve DTO'yu 'UpdateTenantProductDto' olarak güncelledim.
+        public async Task<ServiceResult<string>> UpdateProductsAsync(string tenantId, List<UpdateTenantProductDto> updates)
+        {
+            var existingProducts = await _productRepository
                 .Where(t => t.TenantId == tenantId)
                 .ToListAsync();
 
+            bool dataChanged = false;
+
             foreach (var updateItem in updates)
             {
-                var targetEntity = existingSettings.FirstOrDefault(x => x.SymbolId == updateItem.SymbolId);
-
-                if (targetEntity != null)
+                var product = existingProducts.FirstOrDefault(x => x.Id == updateItem.Id);
+                if (product != null)
                 {
-                    // UPDATE: Zaten kayıt varsa güncelle
-                    targetEntity.BuyMultiplier = updateItem.BuyMultiplier;
-                    targetEntity.SellMultiplier = updateItem.SellMultiplier;
-                    targetEntity.AddonAmount = updateItem.AddonAmount;
-                    targetEntity.ModifiedAt = DateTime.UtcNow;
-
-                    _multiplierRepository.Update(targetEntity);
-                }
-                else
-                {
-                    // INSERT: Kayıt yoksa yeni oluştur
-                    var newEntity = new TenantMultiplier
-                    {
-                        TenantId = tenantId,
-                        SymbolId = updateItem.SymbolId,
-                        BuyMultiplier = updateItem.BuyMultiplier,
-                        SellMultiplier = updateItem.SellMultiplier,
-                        AddonAmount = updateItem.AddonAmount,
-                        IsActive = true, // Default aktif
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    await _multiplierRepository.AddAsync(newEntity);
+                    // Değerleri güncelle
+                    product.Name = updateItem.Name; // İsim değişikliği
+                    product.BuyMultiplier = updateItem.BuyMultiplier;
+                    product.SellMultiplier = updateItem.SellMultiplier;
+                    product.AddonAmount = updateItem.AddonAmount;
+                    product.IsActive = updateItem.IsActive;
+                    product.TenantProductCategoryId = updateItem.CategoryId;    
+                    _productRepository.Update(product);
+                    dataChanged = true;
                 }
             }
 
-            // Toplu Kaydet
+            if (dataChanged)
+            {
+                await _context.SaveChangesAsync();
+                ClearCache(tenantId);
+            }
+
+            return ServiceResult<string>.Success("Ürünler güncellendi.", 200);
+        }
+
+        // 6. UI: TEKİL DURUM GÜNCELLEME (Aktif/Pasif)
+        public async Task<ServiceResult<string>> UpdateProductStatusAsync(string tenantId, string productId, bool isActive)
+        {
+            var product = await _productRepository
+                .Where(x => x.Id == productId && x.TenantId == tenantId)
+                .FirstOrDefaultAsync();
+
+            if (product == null)
+                return ServiceResult<string>.Fail("Ürün bulunamadı.", 404);
+
+            product.IsActive = isActive;
+            _productRepository.Update(product);
             await _context.SaveChangesAsync();
 
-            // 🔥 KRİTİK: Cache temizle ki Dashboard'daki fiyatlar anında değişsin
             ClearCache(tenantId);
 
-            return ServiceResult<string>.Success("Ayarlar başarıyla güncellendi.", 200);
+            return ServiceResult<string>.Success(isActive ? "Ürün aktife alındı." : "Ürün pasife çekildi.", 200);
         }
+        // 7. UI: ÜRÜN SİLME
+        public async Task<ServiceResult<string>> DeleteProductAsync(string tenantId, string productId)
+        {
+            var product = await _productRepository
+                .Where(p => p.Id == productId && p.TenantId == tenantId)
+                .FirstOrDefaultAsync();
+
+            if (product == null)
+                return ServiceResult<string>.Fail("Ürün bulunamadı.", 404);
+
+            _productRepository.Remove(product);
+            await _context.SaveChangesAsync();
+
+            ClearCache(tenantId);
+
+            return ServiceResult<string>.Success("Ürün silindi.", 200);
+        }
+        // --- CACHE TEMİZLEME YARDIMCISI ---
+        public void ClearCache(string tenantId)
+        {
+            _cache.Remove($"TenantProducts_{tenantId}");
+        }
+
     }
 }

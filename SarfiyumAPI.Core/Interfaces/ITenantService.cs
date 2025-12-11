@@ -21,5 +21,11 @@ namespace SarfiyumAPI.Core.Interfaces
         // IFormFile kullanabilmek için: using Microsoft.AspNetCore.Http;
         Task<ServiceResult<string>> UploadLogoAsync(string tenantId, IFormFile file);
 
+        // Yeni Cache'li metodumuz:
+        Task<List<string>> GetActiveTenantIdsAsync();
+
+        // Yeni Tenant eklendiğinde cache temizlemek için gerekli olabilir
+        void ClearTenantCache();
+
     }
 }

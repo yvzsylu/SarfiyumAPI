@@ -11,10 +11,28 @@ namespace SarfiyumAPI.Core.Interfaces
 {
     public interface ITenantSettingsService
     {
-        Task<Dictionary<string, TenantMultiplier>> GetMultipliersAsync(string tenantId);
-        void ClearCache(string tenantId);
+        Task<List<TenantProduct>> GetProductsAsync(string tenantId);
 
+        // 2. UI: Yönetim Paneli Ürün Listesi
         Task<ServiceResult<List<TenantSettingResponseDto>>> GetSettingsForUIAsync(string tenantId);
-        Task<ServiceResult<string>> UpdateSettingsAsync(string tenantId, List<UpdateTenantSettingDto> updates);
+
+        // 3. UI: Kategori Listesi (Dropdown'lar için) [YENİ]
+        Task<ServiceResult<List<TenantProductCategoryDto>>> GetCategoriesAsync(string tenantId);
+
+        // 4. UI: Yeni Ürün Ekleme [YENİ]
+        Task<ServiceResult<string>> CreateProductAsync(string tenantId, CreateTenantProductDto model);
+
+
+        // 6. UI: Tekil Durum Güncelleme (Aktif/Pasif)
+        Task<ServiceResult<string>> UpdateProductStatusAsync(string tenantId, string productId, bool isActive);
+
+        // 7. UI: Ürün Silme [YENİ]
+        Task<ServiceResult<string>> DeleteProductAsync(string tenantId, string productId);
+
+        Task<ServiceResult<string>> UpdateProductsAsync(string tenantId, List<UpdateTenantProductDto> updates);
+
+
+        // 8. Cache Temizleme
+        void ClearCache(string tenantId);
     }
 }

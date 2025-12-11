@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using SarfiyumAPI.Core.DTOs;
 using SarfiyumAPI.Core.Entities;
 using SarfiyumAPI.Core.Interfaces;
@@ -14,11 +15,18 @@ namespace SarfiyumAPI.Service.Services
         private readonly IRepository<Tenant> _tenantRepository;
         private readonly IDataContext _context;
         private readonly IWebHostEnvironment _env;
-        public TenantService(IRepository<Tenant> tenantRepository, IDataContext context, IWebHostEnvironment env)
+        private readonly IMemoryCache _cache;
+        private readonly IRepository<TenantProductCategory> _categoryRepository;
+        private readonly IRepository<TenantProduct> _productRepository;
+        public TenantService(IRepository<Tenant> tenantRepository, IDataContext context, IWebHostEnvironment env, IMemoryCache cache, IRepository<TenantProductCategory> categoryRepository,
+            IRepository<TenantProduct> productRepository)
         {
             _tenantRepository = tenantRepository;
             _context = context;
-            _env = env; 
+            _env = env;
+            _cache = cache;
+            _categoryRepository = categoryRepository;
+            _productRepository = productRepository;
         }
 
         // 1. TÜMÜNÜ GETİR
@@ -74,8 +82,10 @@ namespace SarfiyumAPI.Service.Services
         }
 
         // 3. OLUŞTUR
+        // 3. OLUŞTUR (GÜNCELLENEN METOT)
         public async Task<ServiceResult<string>> CreateAsync(TenantDto model)
         {
+            // A. Tenant Oluştur
             var tenant = new Tenant
             {
                 Id = Guid.NewGuid().ToString(),
@@ -89,7 +99,6 @@ namespace SarfiyumAPI.Service.Services
                 {
                     City = model.City,
                     District = model.District,
-                    // Street YOK
                     ZipCode = model.ZipCode,
                     FullAddress = model.FullAddress,
                     Country = model.Country ?? "Türkiye"
@@ -97,10 +106,83 @@ namespace SarfiyumAPI.Service.Services
             };
 
             await _tenantRepository.AddAsync(tenant);
+            await _context.SaveChangesAsync(); // ID oluşsun diye save ediyoruz.
+
+            // ---------------------------------------------------------
+            // B. KATEGORİLERİ OLUŞTUR (SEEDING)
+            // ---------------------------------------------------------
+            var catMaden = new TenantProductCategory { TenantId = tenant.Id, Name = "Maden", OrderIndex = 1 };
+            var catDoviz = new TenantProductCategory { TenantId = tenant.Id, Name = "Döviz", OrderIndex = 2 };
+            var catBilezik = new TenantProductCategory { TenantId = tenant.Id, Name = "Bilezik", OrderIndex = 3 }; // Boş gelecek
+            var catKredi = new TenantProductCategory { TenantId = tenant.Id, Name = "Kredi Kartı", OrderIndex = 4 }; // Boş gelecek
+
+            await _categoryRepository.AddRangeAsync(new[] { catMaden, catDoviz, catBilezik, catKredi });
+            await _context.SaveChangesAsync(); // Kategori ID'leri oluşsun diye save ediyoruz.
+
+            // ---------------------------------------------------------
+            // C. VARSAYILAN ÜRÜNLERİ EKLE (Sadece Ham Veriler)
+            // ---------------------------------------------------------
+            var defaultProducts = new List<TenantProduct>();
+            int order = 0;
+
+            // --- DÖVİZ ---
+            defaultProducts.Add(CreateProduct(tenant.Id, catDoviz.Id, "Dolar/TRY", "USDTRY", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catDoviz.Id, "Euro/TRY", "EURTRY", ++order));
+
+            // --- MADEN ---
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Has Altın", "ALTIN", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Gümüş", "GUMTRY", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Külçe Altın", "KULCEALTIN", ++order));
+
+            // Gramlar
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "22 Ayar Gram", "AYAR22", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "14 Ayar Gram", "AYAR14", ++order));
+
+            // Ziynetler (Yeni)
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Yeni Çeyrek", "CEYREK_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Yeni Yarım", "YARIM_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Yeni Tam", "TEK_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Yeni Ata", "ATA_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Yeni Ata 5'li", "ATA5_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Yeni Gremese", "GREMESE_YENI", ++order));
+
+            // Ziynetler (Eski)
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Eski Çeyrek", "CEYREK_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Eski Yarım", "YARIM_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Eski Tam", "TEK_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Eski Ata", "ATA_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Eski Ata 5'li", "ATA5_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Eski Gremese", "GREMESE_ESKI", ++order));
+
+            // Bilezik ve Kredi Kartı kategorileri boş kalacak (User kendi ekleyecek)
+
+            await _productRepository.AddRangeAsync(defaultProducts);
             await _context.SaveChangesAsync();
+
+            // Cache Temizle
+            ClearTenantCache();
 
             return ServiceResult<string>.Success(tenant.Id, 201);
         }
+
+        private TenantProduct CreateProduct(string tenantId, string catId, string name, string sourceKey, int order)
+        {
+            return new TenantProduct
+            {
+                TenantId = tenantId,
+                TenantProductCategoryId = catId,
+                Name = name,
+                SourceKey = sourceKey,
+                BuyMultiplier = 1.0m, // Ham veri olduğu için çarpan 1
+                SellMultiplier = 1.0m,
+                AddonAmount = 0m,
+                OrderIndex = order,
+                IsActive = true
+            };
+        }
+
+
+
 
         // 4. GÜNCELLE
         public async Task<ServiceResult<string>> UpdateAsync(TenantDto model)
@@ -122,7 +204,7 @@ namespace SarfiyumAPI.Service.Services
 
             _tenantRepository.Update(tenant);
             await _context.SaveChangesAsync();
-
+            ClearTenantCache();
             return ServiceResult<string>.Success("Tenant updated successfully", 200);
         }
 
@@ -141,7 +223,7 @@ namespace SarfiyumAPI.Service.Services
 
             _tenantRepository.Update(tenant);
             await _context.SaveChangesAsync();
-
+            ClearTenantCache();
             return ServiceResult<string>.Success("Tenant deleted successfully", 200);
         }
 
@@ -156,7 +238,7 @@ namespace SarfiyumAPI.Service.Services
 
             _tenantRepository.Update(tenant);
             await _context.SaveChangesAsync();
-
+            ClearTenantCache();
             return ServiceResult<string>.Success("Status updated successfully", 200);
         }
 
@@ -198,5 +280,38 @@ namespace SarfiyumAPI.Service.Services
 
             return ServiceResult<string>.Success(logoUrl, 200);
         }
+
+
+        public async Task<List<string>> GetActiveTenantIdsAsync()
+        {
+            string cacheKey = "Active_Tenant_List_Cached";
+
+            // Cache kontrolü
+            if (!_cache.TryGetValue(cacheKey, out List<string> tenantIds))
+            {
+                // DB'den çek
+                // Not: Tenant.Id tipin int ise ToString() ile dönüştürüyoruz çünkü SignalR group string ister.
+                tenantIds = await _tenantRepository
+                    .Where(t => t.IsActive && !t.IsDeleted)
+                    .Select(t => t.Id.ToString())
+                    .ToListAsync();
+
+                // Cache Ayarları (Örn: 10 dakika boyunca DB'ye gitme)
+                var cacheOptions = new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(10))
+                    .SetPriority(CacheItemPriority.High);
+
+                _cache.Set(cacheKey, tenantIds, cacheOptions);
+            }
+
+            return tenantIds;
+        }
+
+        public void ClearTenantCache()
+        {
+            _cache.Remove("Active_Tenant_List_Cached");
+        }
+
+
     }
 }

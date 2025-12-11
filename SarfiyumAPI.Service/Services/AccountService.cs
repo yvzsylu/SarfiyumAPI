@@ -344,5 +344,26 @@ namespace SarfiyumAPI.Service.Services
         }
 
 
+        public async Task<ServiceResult<string>> DeleteAsync(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null) return ServiceResult<string>.Fail("User not found", 404);
+
+            // MANUEL SOFT DELETE
+
+            var updateResult = await _userManager.DeleteAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                return ServiceResult<string>.Fail(updateResult.Errors.First().Description, 400);
+            }
+
+            // Street kontrolü veya dummy veri atamasına gerek kalmadı
+            // Çünkü Street kolonu veritabanından silindi.
+
+
+            return ServiceResult<string>.Success("User deleted successfully", 200);
+        }
+
+
     }
 }

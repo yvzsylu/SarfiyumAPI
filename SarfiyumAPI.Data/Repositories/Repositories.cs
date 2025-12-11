@@ -50,5 +50,9 @@ namespace SarfiyumAPI.Data.Repositories
         {
             return _dbSet.Where(expression);
         }
+        public async Task AddRangeAsync(IEnumerable<T> entities)
+        {
+            await _dbSet.AddRangeAsync(entities);
+        }
     }
 }

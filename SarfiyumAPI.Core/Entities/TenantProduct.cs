@@ -8,35 +8,38 @@ using System.Threading.Tasks;
 
 namespace SarfiyumAPI.Core.Entities
 {
-    public class TenantMultiplier: EntityBase
+    public class TenantProduct : EntityBase
     {
-        // Hangi Kuyumcu? (Senin User/Tenant tablondaki ID string ise string, int ise int olmalı. 
-        // EntityBase string olduğu için burada string varsaydım.)
         [Required]
         [StringLength(EntityConstants.KeyLength)]
         public string TenantId { get; set; } = string.Empty;
 
-        // Hangi Sembol? (Foreign Key -> SymbolDefinitions)
+        // --- İLİŞKİLER ---
         [Required]
         [StringLength(EntityConstants.KeyLength)]
-        public string SymbolId { get; set; } = string.Empty;
+        public string TenantProductCategoryId { get; set; } = string.Empty;
 
-        [ForeignKey("SymbolId")]
-        public virtual Symbol? Symbol { get; set; }
+        [ForeignKey("TenantProductCategoryId")]
+        public virtual TenantProductCategory? TenantProductCategory { get; set; }
 
-        // --- ÇARPAN AYARLARI ---
+        // --- ÜRÜN BİLGİLERİ ---
+        [Required]
+        public string Name { get; set; } = default!; // Örn: "22 Ayar Ajda"
 
-        // Alış Çarpanı (Örn: 1.05)
+        [Required]
+        public string SourceKey { get; set; } = default!; // Örn: "ALTIN", "USDTRY"
+
+        // --- ÇARPANLAR ---
         [Column(TypeName = "decimal(18, 10)")]
         public decimal BuyMultiplier { get; set; } = 1.0000000000m;
-        // Satış Çarpanı (Örn: 1.05)
+
         [Column(TypeName = "decimal(18, 10)")]
         public decimal SellMultiplier { get; set; } = 1.0000000000m;
-        // Sabit Makas (Örn: +10 TL ekle)
+
         [Column(TypeName = "decimal(18, 10)")]
         public decimal AddonAmount { get; set; } = 0m;
 
-        // Tenant bu sembolü panelinde görmek istemeyebilir
+        public int OrderIndex { get; set; } // Ürün sırası
         public bool IsActive { get; set; } = true;
     }
 }

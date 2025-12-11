@@ -12,6 +12,7 @@ namespace SarfiyumAPI.Core.Interfaces
         Task<T> GetByIdAsync(string id);
         Task<IEnumerable<T>> GetAllAsync();
         IQueryable<T> Where(Expression<Func<T, bool>> expression);
+        Task AddRangeAsync(IEnumerable<T> entities);
         Task AddAsync(T entity);
         void Remove(T entity);
         void Update(T entity);

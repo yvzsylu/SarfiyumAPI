@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SarfiyumAPI.Core.DTOs;
 using SarfiyumAPI.Core.Interfaces;
+using SarfiyumAPI.Service.Services;
 
 namespace SarfiyumAPI.Controllers.Admin
 {
@@ -93,5 +94,11 @@ namespace SarfiyumAPI.Controllers.Admin
             return CreateActionResult(await _authService.LoginAsync(model));
         }
         */
+        // DELETE: api/admin/Tenant/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(string id)
+        {
+            return CreateActionResult(await _accountService.DeleteAsync(id));
+        }
     }
 }

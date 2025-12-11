@@ -8,9 +8,10 @@ namespace SarfiyumAPI.Core.DTOs
 {
     public class UpdateTenantSettingDto
     {
-        public string SymbolId { get; set; } = default!;
+        public string Id { get; set; } = default!; // Güncellenecek Product ID
         public decimal BuyMultiplier { get; set; }
         public decimal SellMultiplier { get; set; }
         public decimal AddonAmount { get; set; }
+        public bool IsActive { get; set; }
     }
 }

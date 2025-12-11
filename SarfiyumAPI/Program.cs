@@ -68,9 +68,7 @@ builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
-builder.Services.AddScoped<ISymbolCategoryService, SymbolCategoryService>(); // <-- YENİ
 // 🔥 EKLENEN KRİTİK SERVİSLER 🔥
-builder.Services.AddScoped<ISymbolService, SymbolService>(); // Sembol Eşitleme
 builder.Services.AddScoped<ITenantSettingsService, TenantSettingsService>(); // Çarpan Hesaplama Logic'i
 
 // Background Worker (Motor)

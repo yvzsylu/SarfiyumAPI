@@ -14,16 +14,20 @@ namespace SarfiyumAPI.Data.Context
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<AppSetting> AppSettings { get; set; }
 
-        // --- YENİ EKLENEN VE GÜNCELLENEN TABLOLAR ---
-        public DbSet<SymbolCategory> SymbolCategories { get; set; } // YENİ
-        public DbSet<Symbol> Symbols { get; set; }
-        public DbSet<TenantMultiplier> TenantMultipliers { get; set; }
+        // --- 🔥 YENİ EKLENEN TABLOLAR ---
+        public DbSet<TenantProductCategory> TenantProductCategories { get; set; }
+        public DbSet<TenantProduct> TenantProducts { get; set; }
+
+        // --- 🗑️ SİLİNEN ESKİ TABLOLAR ---
+        // public DbSet<SymbolCategory> SymbolCategories { get; set; } 
+        // public DbSet<Symbol> Symbols { get; set; }
+        // public DbSet<TenantMultiplier> TenantMultipliers { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // 1. İLİŞKİLER VE AYARLAR
+            // 1. KULLANICI & TENANT İLİŞKİLERİ
             builder.Entity<AppUser>()
                 .HasOne(u => u.Tenant)
                 .WithMany(t => t.Users)
@@ -41,50 +45,38 @@ namespace SarfiyumAPI.Data.Context
             });
 
             // =========================================================================
-            //  SYMBOL & CATEGORY AYARLARI (GÜNCELLENDİ)
+            //  🔥 TENANT PRODUCT & CATEGORY AYARLARI (YENİ)
             // =========================================================================
 
-            // --- SymbolCategory Ayarları ---
-            builder.Entity<SymbolCategory>()
-                .HasIndex(c => c.Name)
-                .IsUnique(); // Aynı isimde kategori olmasın
+            // --- TenantProductCategory ---
+            builder.Entity<TenantProductCategory>()
+                .HasMany(c => c.TenantProducts)
+                .WithOne(p => p.TenantProductCategory)
+                .HasForeignKey(p => p.TenantProductCategoryId)
+                .OnDelete(DeleteBehavior.Restrict); // Kategori silinirse ürünler ne olsun? (Restrict: Silinemez, Cascade: Silinir)
 
-            // --- Symbol Ayarları ---
-            builder.Entity<Symbol>()
-                .HasIndex(s => s.Name) // ApiKey kalktı, Name artık benzersiz alanımız
-                .IsUnique();
-
-            // Sembol - Kategori İlişkisi (Garanti altına alıyoruz)
-            builder.Entity<Symbol>()
-                .HasOne(s => s.Category)
-                .WithMany(c => c.Symbols)
-                .HasForeignKey(s => s.SymbolCategoryId)
-                .OnDelete(DeleteBehavior.Restrict); // Kategori silinirse semboller boşa düşmesin, hata versin.
-
-            // --- TenantMultiplier Ayarları ---
-            builder.Entity<TenantMultiplier>()
-                .HasIndex(t => new { t.TenantId, t.SymbolId }) // Bir tenant aynı sembolü 2 kere ekleyemesin
-                .IsUnique();
-
-            // Decimal hassasiyetleri
-            builder.Entity<TenantMultiplier>()
+            // --- TenantProduct ---
+            // Decimal Hassasiyetleri (Çarpanlar için)
+            builder.Entity<TenantProduct>()
                 .Property(p => p.BuyMultiplier).HasColumnType("decimal(18,10)");
 
-            builder.Entity<TenantMultiplier>()
+            builder.Entity<TenantProduct>()
                 .Property(p => p.SellMultiplier).HasColumnType("decimal(18,10)");
 
-            builder.Entity<TenantMultiplier>()
+            builder.Entity<TenantProduct>()
                 .Property(p => p.AddonAmount).HasColumnType("decimal(18,10)");
 
             // =========================================================================
             //  GLOBAL QUERY FILTERS (SOFT DELETE)
             // =========================================================================
-            builder.Entity<Symbol>().HasQueryFilter(e => !e.IsDeleted);
-            builder.Entity<TenantMultiplier>().HasQueryFilter(e => !e.IsDeleted);
-            builder.Entity<SymbolCategory>().HasQueryFilter(e => !e.IsDeleted); // Yeni eklendi
+            builder.Entity<Tenant>().HasQueryFilter(e => !e.IsDeleted);
+
+            // Yeni Tablolar İçin Soft Delete Filtresi
+            builder.Entity<TenantProductCategory>().HasQueryFilter(e => !e.IsDeleted);
+            builder.Entity<TenantProduct>().HasQueryFilter(e => !e.IsDeleted);
 
             // =========================================================================
-            //  SEED DATA (BAŞLANGIÇ VERİLERİ)
+            //  SEED DATA (AYNEN KORUNDU)
             // =========================================================================
 
             const string ADMIN_ROLE_ID = "341743f0-asd2-42de-afbf-59kmkkmk72cf6";

@@ -28,5 +28,8 @@ namespace SarfiyumAPI.Core.Interfaces
         Task<ServiceResult<string>> UpdateUserAsync(UserUpdateDto model);
 
         Task<ServiceResult<UserListDto>> GetUserByIdAsync(string id);
+
+        Task<ServiceResult<string>> DeleteAsync(string id);
+
     }
 }
