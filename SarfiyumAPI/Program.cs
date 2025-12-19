@@ -11,6 +11,9 @@ using SarfiyumAPI.Services; // HostedService buradaydı
 using SarfiyumAPI.Hubs;     // 🔥 EKLENDİ: GoldHub'ı tanıması için
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Coravel; // Eklendi
+using SarfiyumAPI.Service.Jobs; // Job'ın olduğu namespace
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +48,10 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
+//Jobs & Scheduler
+builder.Services.AddScheduler();
+builder.Services.AddTransient<ExpirationJob>();
+
 // ==================================================================
 // 3. REAL-TIME & CACHING (Sarfiyum Motoru)
 // ==================================================================
@@ -68,6 +75,9 @@ builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
 // 🔥 EKLENEN KRİTİK SERVİSLER 🔥
 builder.Services.AddScoped<ITenantSettingsService, TenantSettingsService>(); // Çarpan Hesaplama Logic'i
 
@@ -148,7 +158,18 @@ builder.Services.AddCors(options =>                    // 🔥 TEST SÜRESİNCE 
     });
 });
 
+builder.Services.AddHttpContextAccessor();
+
 var app = builder.Build();
+
+
+app.Services.UseScheduler(scheduler =>
+{
+    // "Bu görevi Her Gün gece 00:00'da çalıştır"
+    scheduler.Schedule<ExpirationJob>()
+             .DailyAt(0, 0)
+             .Zoned(TimeZoneInfo.Local); // Sunucunun yerel saatini kullan
+});
 
 // ==================================================================
 // 7. MIDDLEWARE PIPELINE

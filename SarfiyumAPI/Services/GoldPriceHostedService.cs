@@ -135,7 +135,8 @@ namespace SarfiyumAPI.Services
                                 Source = "Sarfiyum",
                                 Timestamp = sourceData.Timestamp,
                                 Bid = finalBid > 0 ? finalBid : null,
-                                Ask = finalAsk > 0 ? finalAsk : null
+                                Ask = finalAsk > 0 ? finalAsk : null,
+                                OrderIndex = product.OrderIndex
                             });
                         }
                     }

@@ -29,5 +29,8 @@ namespace SarfiyumAPI.Core.DTOs
 
         [JsonPropertyName("timestamp")]
         public string Timestamp { get; set; } = default!;// String (0000 yılı hatasını önlemek için)
+
+        [JsonPropertyName("orderIndex")]
+        public int OrderIndex { get; set; }
     }
 }

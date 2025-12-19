@@ -23,6 +23,26 @@ namespace SarfiyumAPI.Core.Entities
         public Address Address { get; set; } = new Address();
 
         // İSİM DEĞİŞİKLİĞİ: Employees -> Users
-        public ICollection<AppUser> Users { get; set; }
+        public ICollection<AppUser> Users { get; set; } = new List<AppUser>();
+        // 1. Kritik Alan: Abonelik Bitiş Tarihi
+        // Null ise: Hiç abonelik başlatmamış demektir.
+        public DateTime? SubscriptionEndDate { get; set; }
+
+        // 2. Navigation Property: Geçmiş ödemelere erişmek için
+        // İlişkiyi kuruyoruz (One-to-Many)
+        public ICollection<TenantPaymentHistory> PaymentHistories { get; set; } = new List<TenantPaymentHistory>();
+
+
+        // --- OPSİYONEL HELPER (Veritabanına kaydedilmez) ---
+        // Kod içinde hızlıca kontrol yapmak için bu property'i kullanabilirsin.
+        // Login olurken: if(!tenant.IsSubscriptionActive) throw ... diyebilmek için.
+        public bool IsSubscriptionActive
+        {
+            get
+            {
+                // Tarih varsa VE şu anki zamandan büyükse (gelecekteyse) aktiftir.
+                return SubscriptionEndDate.HasValue && SubscriptionEndDate.Value > DateTime.UtcNow;
+            }
+        }
     }
 }

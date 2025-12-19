@@ -18,5 +18,7 @@ namespace SarfiyumAPI.Core.DTOs
         public decimal SellMultiplier { get; set; }
         public decimal AddonAmount { get; set; }
         public bool IsActive { get; set; }
+
+        public int OrderIndex { get; set; }
     }
 }

@@ -31,6 +31,8 @@ namespace SarfiyumAPI.Core.Interfaces
 
         Task<ServiceResult<string>> UpdateProductsAsync(string tenantId, List<UpdateTenantProductDto> updates);
 
+        Task<ServiceResult<string>> UpdateProductOrderAsync(string tenantId, List<ProductOrderRequestDto> orderList);
+
 
         // 8. Cache Temizleme
         void ClearCache(string tenantId);

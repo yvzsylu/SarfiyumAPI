@@ -82,7 +82,8 @@ namespace SarfiyumAPI.Service.Services
                 BuyMultiplier = p.BuyMultiplier,
                 SellMultiplier = p.SellMultiplier,
                 AddonAmount = p.AddonAmount,
-                IsActive = p.IsActive
+                IsActive = p.IsActive,
+                OrderIndex = p.OrderIndex
             }).ToList();
 
             return ServiceResult<List<TenantSettingResponseDto>>.Success(responseList);
@@ -216,6 +217,40 @@ namespace SarfiyumAPI.Service.Services
         public void ClearCache(string tenantId)
         {
             _cache.Remove($"TenantProducts_{tenantId}");
+        }
+
+        // YENİ METODU EKLE: UpdateProductOrderAsync (En alta ekleyebilirsin)
+        public async Task<ServiceResult<string>> UpdateProductOrderAsync(string tenantId, List<ProductOrderRequestDto> orderList)
+        {
+            // 1. Tenant'ın ürünlerini çek
+            var allProducts = await _productRepository
+                .Where(x => x.TenantId == tenantId)
+                .ToListAsync();
+
+            bool dataChanged = false;
+
+            // 2. Gelen listeyi eşleştir ve güncelle
+            foreach (var orderItem in orderList)
+            {
+                var product = allProducts.FirstOrDefault(p => p.Id == orderItem.ProductId);
+
+                // Eğer ürün varsa ve sırası değişmişse güncelle
+                if (product != null && product.OrderIndex != orderItem.NewIndex)
+                {
+                    product.OrderIndex = orderItem.NewIndex;
+                    _productRepository.Update(product);
+                    dataChanged = true;
+                }
+            }
+
+            // 3. Değişiklik varsa kaydet ve Cache temizle
+            if (dataChanged)
+            {
+                await _context.SaveChangesAsync();
+                ClearCache(tenantId); // Kritik: HostedService yeni sırayı görsün
+            }
+
+            return ServiceResult<string>.Success("Sıralama güncellendi.", 200);
         }
 
     }

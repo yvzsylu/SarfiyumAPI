@@ -18,6 +18,12 @@ namespace SarfiyumAPI.Data.Context
         public DbSet<TenantProductCategory> TenantProductCategories { get; set; }
         public DbSet<TenantProduct> TenantProducts { get; set; }
 
+        public DbSet<TenantPaymentHistory> TenantPaymentHistories { get; set; }
+
+        public DbSet<UserLoginHistory> UserLoginHistories { get; set; }
+
+
+
         // --- 🗑️ SİLİNEN ESKİ TABLOLAR ---
         // public DbSet<SymbolCategory> SymbolCategories { get; set; } 
         // public DbSet<Symbol> Symbols { get; set; }
@@ -43,6 +49,18 @@ namespace SarfiyumAPI.Data.Context
                 a.Property(p => p.ZipCode).HasColumnName("ZipCode").HasMaxLength(20);
                 a.Property(p => p.Country).HasColumnName("Country").HasMaxLength(50);
             });
+
+            // Tenant ile Ödeme Geçmişi Arasındaki İlişki
+            builder.Entity<Tenant>()
+                .HasMany(t => t.PaymentHistories) // Tenant entity'sine eklediğin property
+                .WithOne()
+                .HasForeignKey(h => h.TenantId)
+                .OnDelete(DeleteBehavior.Cascade); // Firma silinirse geçmişi de silinsin
+
+            // Para birimi hassasiyeti (Önemli)
+            builder.Entity<TenantPaymentHistory>()
+                .Property(p => p.Amount)
+                .HasColumnType("decimal(18,2)"); // Para birimi için standart (virgülden sonra 2 hane)
 
             // =========================================================================
             //  🔥 TENANT PRODUCT & CATEGORY AYARLARI (YENİ)
@@ -74,6 +92,7 @@ namespace SarfiyumAPI.Data.Context
             // Yeni Tablolar İçin Soft Delete Filtresi
             builder.Entity<TenantProductCategory>().HasQueryFilter(e => !e.IsDeleted);
             builder.Entity<TenantProduct>().HasQueryFilter(e => !e.IsDeleted);
+            builder.Entity<TenantPaymentHistory>().HasQueryFilter(e => !e.IsDeleted);
 
             // =========================================================================
             //  SEED DATA (AYNEN KORUNDU)

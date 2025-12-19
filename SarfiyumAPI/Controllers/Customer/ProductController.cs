@@ -84,5 +84,14 @@ namespace SarfiyumAPI.Controllers.Customer
 
             return CreateActionResult(await _settingsService.DeleteProductAsync(tenantId, id));
         }
+
+        [HttpPatch("reorder")]
+        public async Task<IActionResult> UpdateOrder([FromBody] List<ProductOrderRequestDto> model)
+        {
+            var tenantId = User.FindFirst("TenantId")?.Value;
+            if (string.IsNullOrEmpty(tenantId)) return Unauthorized();
+
+            return CreateActionResult(await _settingsService.UpdateProductOrderAsync(tenantId, model));
+        }
     }
 }

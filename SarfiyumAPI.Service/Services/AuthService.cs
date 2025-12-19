@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SarfiyumAPI.Core.DTOs;
@@ -27,14 +28,17 @@ namespace SarfiyumAPI.Service.Services
 
         // 2. DEĞİŞİKLİK: Tenant oluşturmak için Repository ekliyoruz
         private readonly IRepository<Tenant> _tenantRepository;
-
+        private readonly IRepository<UserLoginHistory> _loginHistoryRepo;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         public AuthService(
             UserManager<AppUser> userManager,
             RoleManager<IdentityRole> roleManager,
             IConfiguration configuration,
             IDataContext context,
             IRepository<Tenant> tenantRepository,
-            IEmailService emailService)
+            IEmailService emailService,
+            IRepository<UserLoginHistory> loginHistoryRepo,
+            IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -42,6 +46,8 @@ namespace SarfiyumAPI.Service.Services
             _context = context;
             _tenantRepository = tenantRepository;
             _emailService = emailService;
+            _loginHistoryRepo = loginHistoryRepo;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<ServiceResult<string>> LoginAsync(LoginDto model)
@@ -67,6 +73,19 @@ namespace SarfiyumAPI.Service.Services
                     if (tenant == null || tenant.IsDeleted || !tenant.IsActive)
                     {
                         return ServiceResult<string>.Fail("Bağlı olduğunuz firma hesabı aktif değildir veya silinmiştir. Lütfen yönetimle iletişime geçiniz.", 403);
+                    }
+
+                    // B. Abonelik Varlığı Kontrolü (Hiç paket almamışsa)
+                    if (!tenant.SubscriptionEndDate.HasValue)
+                    {
+                        return ServiceResult<string>.Fail("Firmanıza tanımlı herhangi bir abonelik bulunamadı. Giriş yapabilmek için lütfen bir paket satın alınız.", 403);
+                    }
+
+                    // C. Abonelik Süresi Kontrolü (Süresi dolmuşsa)
+                    if (tenant.SubscriptionEndDate.Value < DateTime.UtcNow)
+                    {
+                        string bitisTarihi = tenant.SubscriptionEndDate.Value.ToString("dd.MM.yyyy");
+                        return ServiceResult<string>.Fail($"Abonelik süreniz {bitisTarihi} tarihinde dolmuştur. Sisteme giriş yapabilmek için lütfen aboneliğinizi yenileyiniz.", 403);
                     }
                 }
 
@@ -100,6 +119,12 @@ namespace SarfiyumAPI.Service.Services
                         {
                             authClaims.Add(new Claim("tenantLogoUrl", tenant.LogoUrl));
                         }
+                        // 🔥 TOKEN'A ABONELİK BİTİŞ TARİHİNİ EKLEME
+                        // Frontend'de "Aboneliğinizin bitmesine 3 gün kaldı" gibi uyarılar göstermek için.
+                        if (tenant.SubscriptionEndDate.HasValue)
+                        {
+                            authClaims.Add(new Claim("subscriptionEndDate", tenant.SubscriptionEndDate.Value.ToString("O"))); // ISO Format
+                        }
                     }
                 }
 
@@ -107,10 +132,16 @@ namespace SarfiyumAPI.Service.Services
                 authClaims.AddRange(userRoles.Select(role => new Claim("roles", role)));
 
                 var token = GetToken(authClaims);
+
+
                 var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+                // --- YENİ: Giriş Kayıt Loglaması ---
+                await LogLoginInternalAsync(user.Id, user.UserName);
+
 
                 return ServiceResult<string>.Success(tokenString, 200);
             }
+
 
             return ServiceResult<string>.Fail("Invalid username or password!", 401);
         }
@@ -209,6 +240,54 @@ namespace SarfiyumAPI.Service.Services
 
             // Karakterleri karıştır (Shuffle) ki hep Aa1! ile başlamasın
             return new string(password.ToString().OrderBy(x => random.Next()).ToArray());
+        }
+
+        // --- YENİ EKLENEN METOD: LOGIN KAYDI ---
+        // Bu metodu private yapıp içeride çağırıyoruz. Dışarı açmaya gerek yok.
+        private async Task LogLoginInternalAsync(string userId, string userName)
+        {
+            try
+            {
+                var httpContext = _httpContextAccessor.HttpContext;
+
+                string ipAddress = "0.0.0.0";
+                string userAgent = "Unknown";
+
+                if (httpContext != null)
+                {
+                    // IP Alma Mantığı (Proxy destekli)
+                    var forwardedHeader = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+                    if (!string.IsNullOrEmpty(forwardedHeader))
+                    {
+                        ipAddress = forwardedHeader.Split(',')[0].Trim();
+                    }
+                    else
+                    {
+                        ipAddress = httpContext.Connection.RemoteIpAddress?.ToString() ?? "0.0.0.0";
+                    }
+
+                    // User Agent
+                    userAgent = httpContext.Request.Headers["User-Agent"].ToString();
+                }
+
+                var log = new UserLoginHistory
+                {
+                    UserId = userId,
+                    UserName = userName,
+                    IpAddress = ipAddress,
+                    UserAgent = userAgent,
+                    LoginDate = DateTime.UtcNow,
+                    IsSuccess = true
+                };
+
+                await _loginHistoryRepo.AddAsync(log);
+                await _context.SaveChangesAsync();
+            }
+            catch
+            {
+                // Loglama hatası login sürecini patlatmamalı
+                // Burada Console.WriteLine veya ILogger kullanılabilir
+            }
         }
 
     }
