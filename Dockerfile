@@ -22,12 +22,12 @@ RUN npm run build:prod
 # 2. AÞAMA: Backend Build (.NET 8)
 # --------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS dotnet-build
-WORKDIR /app
+WORKDIR /src
 
-# Tüm projeyi kopyala (Katmanlý mimari için üst klasörden her þeyi alýyoruz)
-COPY SarfiyumAPI/ .
+# Sadece içeriði deðil, tüm klasör yapýsýný kopyalýyoruz
+COPY . .
 
-# Restore ve Publish
+# Artýk hiyerarþi korunduðu için bu yollar doðru çalýþacak
 RUN dotnet restore "SarfiyumAPI/SarfiyumAPI.csproj"
 RUN dotnet publish "SarfiyumAPI/SarfiyumAPI.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
