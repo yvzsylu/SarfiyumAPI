@@ -17,7 +17,7 @@ jobs:
       - name: Checkout UI
         uses: actions/checkout@v4
         with:
-          repository: roulda/SarfiyumUI # Kendi GitHub kullanıcı adınla güncelle
+          repository: yvzsylu/SarfiyumUI # Kendi GitHub kullanıcı adınla güncelle
           token: ${{ secrets.GH_PAT }}
           path: SarfiyumUI 
 
