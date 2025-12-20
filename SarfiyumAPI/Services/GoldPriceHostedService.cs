@@ -14,26 +14,30 @@ namespace SarfiyumAPI.Services
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<GoldPriceHostedService> _logger;
         private SocketIOClient.SocketIO _client;
-
+        private readonly IConfiguration _configuration; // 🔥 YENİ: Konfigürasyon okuyucu
         // 🔥 YENİ: Son fiyatları hafızada tutmak için Thread-Safe Sözlük
         private readonly ConcurrentDictionary<string, PriceData> _priceCache = new();
 
         public GoldPriceHostedService(
             IHubContext<GoldHub> hubContext,
             IServiceProvider serviceProvider,
-            ILogger<GoldPriceHostedService> logger)
+            ILogger<GoldPriceHostedService> logger,
+            IConfiguration configuration)
         {
             _hubContext = hubContext;
             _serviceProvider = serviceProvider;
             _logger = logger;
+            _configuration = configuration;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("🚀 GoldPriceHostedService Başlatılıyor...");
 
-            const string serverUrl = "https://sse.datshop.com.tr";
-            const string myKey = "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";
+
+            string serverUrl = _configuration["SocketServer:Url"] ?? throw new Exception("Socket Server URL bulunamadı!");
+            string myKey = _configuration["SocketServer:Key"] ?? throw new Exception("Socket Server Key bulunamadı!");
+
 
             _client = new SocketIOClient.SocketIO(serverUrl, new SocketIOOptions
             {

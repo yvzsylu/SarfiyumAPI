@@ -7,13 +7,12 @@ using SarfiyumAPI.Core.Interfaces;
 using SarfiyumAPI.Data.Context;
 using SarfiyumAPI.Data.Repositories;
 using SarfiyumAPI.Service.Services;
-using SarfiyumAPI.Services; // HostedService buradaydı
-using SarfiyumAPI.Hubs;     // 🔥 EKLENDİ: GoldHub'ı tanıması için
+using SarfiyumAPI.Services;
+using SarfiyumAPI.Hubs;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Coravel; // Eklendi
-using SarfiyumAPI.Service.Jobs; // Job'ın olduğu namespace
-
+using Coravel;
+using SarfiyumAPI.Service.Jobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,18 +55,16 @@ builder.Services.AddTransient<ExpirationJob>();
 // 3. REAL-TIME & CACHING (Sarfiyum Motoru)
 // ==================================================================
 
-builder.Services.AddSignalR(); // SignalR servisi
-builder.Services.AddMemoryCache(); // Tenant ayarları için RAM önbellek
+builder.Services.AddSignalR();
+builder.Services.AddMemoryCache();
 
 // ==================================================================
 // 4. DEPENDENCY INJECTION (Servis Kayıtları)
 // ==================================================================
 
-// Database Context & Repository
 builder.Services.AddScoped<IDataContext>(provider => provider.GetService<AppDbContext>());
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-// Logic Services
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
@@ -77,11 +74,8 @@ builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<ITenantSettingsService, TenantSettingsService>();
 
-// 🔥 EKLENEN KRİTİK SERVİSLER 🔥
-builder.Services.AddScoped<ITenantSettingsService, TenantSettingsService>(); // Çarpan Hesaplama Logic'i
-
-// Background Worker (Motor)
 builder.Services.AddHostedService<GoldPriceHostedService>();
 
 // ==================================================================
@@ -99,10 +93,10 @@ builder.Services.AddAuthentication(options =>
         options.TokenValidationParameters = new TokenValidationParameters()
         {
             ValidateIssuer = true,
-            ValidateAudience = false,
+            ValidateAudience = false, // Tek uygulama olduğu için false kalabilir
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["JWT:Issuer"],
+            ValidIssuer = builder.Configuration["JWT:Issuer"], // appsettings.json'dan okuyacak
             IssuerSigningKey = new SymmetricSecurityKey(
                 System.Text.Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"]!)),
 
@@ -110,7 +104,6 @@ builder.Services.AddAuthentication(options =>
             RoleClaimType = ClaimTypes.Role
         };
 
-        // SignalR Token'ı QueryString'den okuması için (Angular Bağlantısı İçin Şart)
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -133,25 +126,24 @@ builder.Services.AddAuthorization(options =>
 });
 
 // ==================================================================
-// 6. CORS (ANGULAR BAĞLANTISI)
+// 6. CORS (GÜNCELLENDİ - Canlı ve Local Ayrımı)
 // ==================================================================
 
-//builder.Services.AddCors(options =>
-//{
-//    options.AddPolicy("AllowAngularApp", policy =>
-//    {
-//        policy.WithOrigins("http://localhost:4200") // Angular Adresin
-//              .AllowAnyHeader()
-//              .AllowAnyMethod()
-//              .AllowCredentials(); // 🔥 SİNYALR İÇİN BU ZORUNLUDUR! Yoksa hata alırsın.
-//    });
-//});
-
-builder.Services.AddCors(options =>                    // 🔥 TEST SÜRESİNCE HERKESE İZİN VER
+builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngularApp", policy =>
+    // 🔥 PROD: Sadece senin domainin (Güvenlik için şart)
+    options.AddPolicy("ProdCors", policy =>
     {
-        policy.SetIsOriginAllowed(origin => true) // 🔥 HERKESE İZİN VER (Test bitene kadar)
+        policy.WithOrigins("https://www.sarfiyum.com", "https://sarfiyum.com")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // SignalR için zorunlu
+    });
+
+    // 🔥 DEV: Localhost her şeye izin ver
+    options.AddPolicy("DevCors", policy =>
+    {
+        policy.SetIsOriginAllowed(origin => true)
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -162,36 +154,46 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
-
+// Scheduler Setup
 app.Services.UseScheduler(scheduler =>
 {
-    // "Bu görevi Her Gün gece 00:00'da çalıştır"
     scheduler.Schedule<ExpirationJob>()
              .DailyAt(0, 0)
-             .Zoned(TimeZoneInfo.Local); // Sunucunun yerel saatini kullan
+             .Zoned(TimeZoneInfo.Local);
 });
 
 // ==================================================================
-// 7. MIDDLEWARE PIPELINE
+// 7. MIDDLEWARE PIPELINE (SIRALAMA ÇOK ÖNEMLİ)
 // ==================================================================
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    // Localde DevCors politikasını kullan
+    app.UseCors("DevCors");
+}
+else
+{
+    // Canlıda ProdCors politikasını kullan
+    app.UseCors("ProdCors");
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
 
-app.UseCors("AllowAngularApp"); // En üstlerde olması iyidir
+// 🔥 ANGULAR DOSYALARINI SUNMAK İÇİN KRİTİK
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-// 🔥 SIGNALR KAPIYI AÇIYORUZ 🔥
 app.MapHub<GoldHub>("/goldhub");
+
+// 🔥 EN ÖNEMLİ EKLEME: SPA FALLBACK 🔥
+// Eğer gelen istek API değilse ve dosya değilse (resim, css vs.),
+// kullanıcıyı Angular'ın index.html sayfasına gönder.
+// Böylece sayfayı yenilediğinde 404 hatası almazsın.
+app.MapFallbackToFile("index.html");
 
 app.Run();
