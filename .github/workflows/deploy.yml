@@ -1,0 +1,51 @@
+name: Sarfiyum Main Pipeline
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  workflow_dispatch: 
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout API
+        uses: actions/checkout@v4
+        with:
+          path: . 
+
+      - name: Checkout UI
+        uses: actions/checkout@v4
+        with:
+          repository: roulda/SarfiyumUI # Kendi GitHub kullanıcı adınla güncelle
+          token: ${{ secrets.GH_PAT }}
+          path: SarfiyumUI 
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/sarfiyum-app:latest
+
+      - name: SSH Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/sarfiyum
+            docker compose pull app
+            docker compose up -d --force-recreate app
+            rm -rf ./wwwroot/*
+            docker cp sarfiyum_backend:/app/wwwroot/. ./wwwroot/
+            docker restart sarfiyum_nginx
+            docker image prune -f
