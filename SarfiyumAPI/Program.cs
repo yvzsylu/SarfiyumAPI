@@ -76,7 +76,22 @@ builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ITenantSettingsService, TenantSettingsService>();
 
-builder.Services.AddHostedService<GoldPriceHostedService>();
+
+
+// Önce eski kaydı silin: builder.Services.AddHostedService<GoldPriceHostedService>();
+
+// Yerine bu yapıyı kurun:
+if (builder.Environment.IsDevelopment())
+{
+    // Lokal geliştirme sırasında (localhost) sahte veriler akacak
+    builder.Services.AddHostedService<MockGoldPriceHostedService>();
+}
+else
+{
+    // Sunucuda (Production) gerçek Datshop verileri akacak
+    builder.Services.AddHostedService<GoldPriceHostedService>();
+}
+
 
 // ==================================================================
 // 5. JWT AYARLARI

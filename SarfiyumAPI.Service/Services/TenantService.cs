@@ -115,6 +115,8 @@ namespace SarfiyumAPI.Service.Services
             var catDoviz = new TenantProductCategory { TenantId = tenant.Id, Name = "Döviz", OrderIndex = 2 };
             var catBilezik = new TenantProductCategory { TenantId = tenant.Id, Name = "Bilezik", OrderIndex = 3 }; // Boş gelecek
             var catKredi = new TenantProductCategory { TenantId = tenant.Id, Name = "Kredi Kartı", OrderIndex = 4 }; // Boş gelecek
+            var catResat = new TenantProductCategory { TenantId = tenant.Id, Name = "Ata & Reşat", OrderIndex = 5}; // Boş gelecek
+
 
             await _categoryRepository.AddRangeAsync(new[] { catMaden, catDoviz, catBilezik, catKredi });
             await _context.SaveChangesAsync(); // Kategori ID'leri oluşsun diye save ediyoruz.
@@ -126,33 +128,33 @@ namespace SarfiyumAPI.Service.Services
             int order = 0;
 
             // --- DÖVİZ ---
-            defaultProducts.Add(CreateProduct(tenant.Id, catDoviz.Id, "Dolar/TRY", "USDTRY", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catDoviz.Id, "Euro/TRY", "EURTRY", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catDoviz.Id, "DOLAR/TRY", "USDTRY", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catDoviz.Id, "EURO/TRY", "EURTRY", ++order));
 
             // --- MADEN ---
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Has Altın", "ALTIN", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Gümüş", "GUMTRY", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Külçe Altın", "KULCEALTIN", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "HAS ALTN", "ALTIN", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "GÜMÜŞ", "GUMTRY", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "KÜLÇE ALTIN", "KULCEALTIN", ++order));
 
             // Gramlar
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "22 Ayar Gram", "AYAR22", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "14 Ayar Gram", "AYAR14", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "22 AYAR GRAM", "AYAR22", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "14 AYAR GRAM", "AYAR14", ++order));
 
             // Ziynetler (Yeni)
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Yeni Çeyrek", "CEYREK_YENI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Yeni Yarım", "YARIM_YENI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Yeni Tam", "TEK_YENI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Yeni Ata", "ATA_YENI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Yeni Ata 5'li", "ATA5_YENI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Yeni Gremese", "GREMESE_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ ÇEYREK", "CEYREK_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ YARIM", "YARIM_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ TAM", "TEK_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ ATA", "ATA_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ ATA 5'li", "ATA5_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ GREMSE", "GREMESE_YENI", ++order));
 
             // Ziynetler (Eski)
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Eski Çeyrek", "CEYREK_ESKI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Eski Yarım", "YARIM_ESKI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Eski Tam", "TEK_ESKI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Eski Ata", "ATA_ESKI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Eski Ata 5'li", "ATA5_ESKI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "Eski Gremese", "GREMESE_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ ÇEYREK", "CEYREK_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ YARIM", "YARIM_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ TAM", "TEK_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ ATA", "ATA_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ ATA 5'li", "ATA5_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ GREMSE", "GREMESE_ESKI", ++order));
 
             // Bilezik ve Kredi Kartı kategorileri boş kalacak (User kendi ekleyecek)
 
