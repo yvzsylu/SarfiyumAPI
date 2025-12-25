@@ -76,6 +76,7 @@ namespace SarfiyumAPI.Controllers.Admin
             return CreateActionResult(await _accountService.UpdateUserAsync(model));
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
@@ -95,6 +96,7 @@ namespace SarfiyumAPI.Controllers.Admin
         }
         */
         // DELETE: api/admin/Tenant/{id}
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {

@@ -75,6 +75,7 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ITenantSettingsService, TenantSettingsService>();
+builder.Services.AddScoped<IViewerAccountService, ViewerAccountService>();
 
 
 

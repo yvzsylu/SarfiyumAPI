@@ -19,7 +19,6 @@ namespace SarfiyumAPI.Controllers.Admin
 
         // GET: api/admin/Settings
         // Tüm ayarları döner (Sayfa yüklenirken çağıracaksın)
-        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -28,7 +27,6 @@ namespace SarfiyumAPI.Controllers.Admin
 
         // PUT: api/admin/Settings/smtp
         // Sadece SMTP sekmesini kaydederken çağıracaksın
-        [Authorize(Roles = "Admin")]
         [HttpPut("smtp")]
         public async Task<IActionResult> UpdateSmtp([FromBody] SmtpSettingsDto model)
         {

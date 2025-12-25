@@ -10,7 +10,7 @@ namespace SarfiyumAPI.Controllers
     [Tags("Customer/Profile")]
 
     [ApiController]
-    [Authorize] // Giriş yapmış herkes (Admin veya User) erişebilir
+    [Authorize(Roles = "Admin,User")]
     public class ProfileController : CustomBaseController
     {
         private readonly IProfileService _profileService;

@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Authorization; // Authorize için
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using System.Security.Claims;
+using System;
+using System.Threading; // CancellationToken için
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace SarfiyumAPI.Hubs
 {
-    [Authorize] // 🔥 Sadece Token'ı olanlar bağlanabilsin
+    [Authorize]
     public class GoldHub : Hub
     {
         private readonly ILogger<GoldHub> _logger;
@@ -14,30 +17,70 @@ namespace SarfiyumAPI.Hubs
             _logger = logger;
         }
 
-        // Kullanıcı bağlandığı an çalışır
         public override async Task OnConnectedAsync()
         {
-            // Token içindeki "TenantId" claim'ini bul
-            // Not: Senin JWT oluştururken kullandığın claim ismi önemli. 
-            // Genelde "tenantId" veya "TenantId" olur.
-            var tenantId = Context.User?.FindFirst("TenantId")?.Value;
+            // --- 1. SÜRE KONTROLÜ VE ZAMANLAYICI ---
+            var expClaim = Context.User?.FindFirst("exp")?.Value;
 
+            if (expClaim != null && long.TryParse(expClaim, out long expSeconds))
+            {
+                var expDate = DateTimeOffset.FromUnixTimeSeconds(expSeconds);
+                var timeLeft = expDate - DateTimeOffset.UtcNow;
+
+                if (timeLeft.TotalSeconds <= 0)
+                {
+                    Context.Abort();
+                    return;
+                }
+
+                // Sadece Viewer ise zamanlayıcıyı kur
+                var isViewer = Context.User?.IsInRole("Viewer") ?? false;
+                if (isViewer)
+                {
+                    // 🔥 OPTİMİZASYON: Context.ConnectionAborted token'ını gönderiyoruz.
+                    // Kullanıcı 15 dk dolmadan interneti koparırsa veya çıkarsa,
+                    // bu Task otomatik olarak iptal edilir ve RAM'den silinir.
+                    _ = ScheduleDisconnect(timeLeft, Context.ConnectionAborted);
+                }
+            }
+
+            // --- 2. GRUPLAMA ---
+            var tenantId = Context.User?.FindFirst("TenantId")?.Value;
             if (!string.IsNullOrEmpty(tenantId))
             {
-                // Kullanıcıyı otomatik olarak kendi tenant ID'siyle oluşturulmuş gruba ekle
                 await Groups.AddToGroupAsync(Context.ConnectionId, tenantId);
-                _logger.LogInformation($"Kullanıcı {Context.ConnectionId}, '{tenantId}' grubuna eklendi.");
             }
             else
             {
-                _logger.LogWarning("Bağlanan kullanıcının Token'ında TenantId bulunamadı!");
+                Context.Abort();
+                return;
             }
 
             await base.OnConnectedAsync();
         }
 
-        // Manuel metoda artık gerek kalmadı, silebilirsin.
-        /* public async Task JoinTenantGroup(string tenantId) { ... } 
-        */
+        // 🔥 Optimize Edilmiş Metot
+        private async Task ScheduleDisconnect(TimeSpan delay, CancellationToken token)
+        {
+            try
+            {
+                // Kullanıcı bağlı kaldığı sürece bekle.
+                // Eğer kullanıcı çıkarsa 'token' tetiklenir ve bu satır hata fırlatıp görevi bitirir.
+                await Task.Delay(delay, token);
+
+                // Süre doldu ve kullanıcı hala buradaysa:
+                Context.Abort();
+            }
+            catch (TaskCanceledException)
+            {
+                // Kullanıcı süre dolmadan kendi isteğiyle çıktı.
+                // Task iptal edildi, hiçbir şey yapmana gerek yok.
+                // RAM temizlendi.
+            }
+            catch (Exception)
+            {
+                // Diğer olası hatalar (Context dispose vb.)
+            }
+        }
     }
 }

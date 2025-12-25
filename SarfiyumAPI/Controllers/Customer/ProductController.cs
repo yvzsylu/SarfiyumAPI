@@ -9,7 +9,7 @@ namespace SarfiyumAPI.Controllers.Customer
     [Tags("Customer/Products")] // Swagger Tag'ini değiştirdim
 
     [ApiController]
-    [Authorize]
+    [Authorize(Roles = "Admin,User")]
     public class ProductController : CustomBaseController
     {
         private readonly ITenantSettingsService _settingsService;
@@ -26,6 +26,7 @@ namespace SarfiyumAPI.Controllers.Customer
         {
             var tenantId = User.FindFirst("TenantId")?.Value;
             if (string.IsNullOrEmpty(tenantId)) return Unauthorized();
+            var roles = User.Claims.Where(c => c.Type == "roles").Select(c => c.Value).ToList();
 
             return CreateActionResult(await _settingsService.GetSettingsForUIAsync(tenantId));
         }

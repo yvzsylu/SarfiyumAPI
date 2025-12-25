@@ -7,6 +7,7 @@ namespace SarfiyumAPI.Controllers.Admin
     [Route("api/admin/dashboard")]
     [ApiController]
     // [Authorize(Roles = "Admin")] // Admin rolü kontrolünü açmalısın
+    [Authorize(Roles = "Admin")]
     public class DashboardController : CustomBaseController
     {
         private readonly IDashboardService _dashboardService;

@@ -32,17 +32,17 @@ namespace SarfiyumAPI.Controllers
             return CreateActionResult(await _authService.ResetPasswordAsync(model.Email));
         }
 
-        [HttpGet("check")]
-        public IActionResult Check()
-        {
-            return Ok(new
-            {
-                Status = "Sistem Aktif",
-                Version = "1.0.1",
-                ServerTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                Message = "GitHub Actions üzerinden başarıyla güncellendi!"
-            });
-        }
+        //[HttpGet("check")]
+        //public IActionResult Check()
+        //{
+        //    return Ok(new
+        //    {
+        //        Status = "Sistem Aktif",
+        //        Version = "1.0.1",
+        //        ServerTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+        //        Message = "GitHub Actions üzerinden başarıyla güncellendi!"
+        //    });
+        //}
 
     }
 
