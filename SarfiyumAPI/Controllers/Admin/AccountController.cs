@@ -101,6 +101,6 @@ namespace SarfiyumAPI.Controllers.Admin
         public async Task<IActionResult> Delete(string id)
         {
             return CreateActionResult(await _accountService.DeleteAsync(id));
-        }
+        } 
     }
 }
