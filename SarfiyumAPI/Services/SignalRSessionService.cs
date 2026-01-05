@@ -18,7 +18,7 @@ namespace SarfiyumAPI.Services
         public async Task SendForceCheckSession(string userId, string sessionId, string clientSource)
         {
             // AuthService'den gelen emri SignalR üzerinden istemciye iletir
-            await _hubContext.Clients.User(userId).SendAsync("ForceCheckSession", sessionId, clientSource);
+            await _hubContext.Clients.Group(userId).SendAsync("ForceCheckSession", sessionId, clientSource);
         }
     }
 }

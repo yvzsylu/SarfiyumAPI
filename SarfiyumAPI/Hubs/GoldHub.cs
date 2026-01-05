@@ -97,6 +97,11 @@ namespace SarfiyumAPI.Hubs
                 return;
             }
 
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, userId);
+            }
+
             await base.OnConnectedAsync();
         }
 
