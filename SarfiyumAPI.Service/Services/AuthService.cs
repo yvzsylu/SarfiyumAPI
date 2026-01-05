@@ -74,7 +74,9 @@ namespace SarfiyumAPI.Service.Services
                     if (tenant.SubscriptionEndDate.Value < DateTime.UtcNow) return ServiceResult<string>.Fail("Abonelik doldu.", 403);
                 }
 
-                // 1. Session İşlemleri
+                // =================================================================
+                // 1. SESSION MANAGEMENT (CONCURRENT LOGIN CONTROL)
+                // =================================================================
                 var newSessionId = Guid.NewGuid().ToString();
 
                 var existingSession = await _activeSessionRepo
@@ -99,7 +101,10 @@ namespace SarfiyumAPI.Service.Services
                 }
                 await _context.SaveChangesAsync();
 
-                // 2. Token Claims
+
+                // =================================================================
+                // 2. CLAIM OLUŞTURMA
+                // =================================================================
                 var authClaims = new List<Claim>
                 {
                     new Claim(JwtRegisteredClaimNames.Sub, user.UserName ?? ""),
@@ -107,18 +112,41 @@ namespace SarfiyumAPI.Service.Services
                     new Claim("userId", user.Id),
                     new Claim("email", user.Email ?? ""),
                     new Claim("fullName", user.FullName ?? ""),
+                    // 🔥 Yeni Güvenlik Claimleri
                     new Claim("SessionId", newSessionId),
                     new Claim("ClientSource", model.ClientSource.ToString())
                 };
 
+                // --- Tenant Bilgileri (DÜZELTİLDİ: Logo ve Tarih Geri Eklendi) ---
                 if (!string.IsNullOrEmpty(user.TenantId))
                 {
                     authClaims.Add(new Claim("tenantId", user.TenantId));
                     var tenant = await _tenantRepository.GetByIdAsync(user.TenantId);
-                    if (tenant != null) authClaims.Add(new Claim("tenantName", tenant.Name));
+
+                    if (tenant != null)
+                    {
+                        authClaims.Add(new Claim("tenantName", tenant.Name));
+
+                        // 🟢 RESTORED: Logo URL
+                        if (!string.IsNullOrEmpty(tenant.LogoUrl))
+                        {
+                            authClaims.Add(new Claim("tenantLogoUrl", tenant.LogoUrl));
+                        }
+
+                        // 🟢 RESTORED: Subscription End Date
+                        if (tenant.SubscriptionEndDate.HasValue)
+                        {
+                            authClaims.Add(new Claim("subscriptionEndDate", tenant.SubscriptionEndDate.Value.ToString("O")));
+                        }
+                    }
                 }
+
                 authClaims.AddRange(userRoles.Select(role => new Claim("roles", role)));
 
+
+                // =================================================================
+                // 3. TOKEN SÜRESİ VE OLUŞTURMA
+                // =================================================================
                 DateTime tokenExpiration = userRoles.Any(r => r.Equals("Viewer", StringComparison.OrdinalIgnoreCase))
                     ? DateTime.UtcNow.AddMinutes(60)
                     : DateTime.UtcNow.AddMonths(6);
@@ -128,14 +156,17 @@ namespace SarfiyumAPI.Service.Services
 
                 await LogLoginInternalAsync(user.Id, user.UserName);
 
-                // 🔥 DEĞİŞİKLİK: Interface üzerinden Hub'ı tetikliyoruz
-                // API katmanında yazdığımız SignalRSessionService çalışacak
+                // =================================================================
+                // 4. SIGNALR KICK (ANLIK ATMA)
+                // =================================================================
+                // API katmanındaki servisi tetikleyerek eski oturumları düşür
                 await _sessionNotificationService.SendForceCheckSession(user.Id, newSessionId, model.ClientSource.ToString());
 
                 return ServiceResult<string>.Success(tokenString, 200);
             }
             return ServiceResult<string>.Fail("Kullanıcı adı veya şifre hatalı!", 401);
         }
+
         private JwtSecurityToken GetToken(List<Claim> authClaims, DateTime expires)
         {
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
