@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SarfiyumAPI.Core.DTOs;
@@ -27,6 +29,8 @@ namespace SarfiyumAPI.Service.Services
         private readonly IRepository<Tenant> _tenantRepository;
         private readonly IRepository<UserLoginHistory> _loginHistoryRepo;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IRepository<UserActiveSession> _activeSessionRepo;
+        private readonly ISessionNotificationService _sessionNotificationService;
 
         public AuthService(
             UserManager<AppUser> userManager,
@@ -36,7 +40,9 @@ namespace SarfiyumAPI.Service.Services
             IRepository<Tenant> tenantRepository,
             IEmailService emailService,
             IRepository<UserLoginHistory> loginHistoryRepo,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IRepository<UserActiveSession> activeSessionRepo,
+            ISessionNotificationService sessionNotificationService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -46,6 +52,8 @@ namespace SarfiyumAPI.Service.Services
             _emailService = emailService;
             _loginHistoryRepo = loginHistoryRepo;
             _httpContextAccessor = httpContextAccessor;
+            _activeSessionRepo = activeSessionRepo;
+            _sessionNotificationService = sessionNotificationService;
         }
 
         public async Task<ServiceResult<string>> LoginAsync(LoginDto model)
@@ -56,113 +64,85 @@ namespace SarfiyumAPI.Service.Services
             {
                 var userRoles = await _userManager.GetRolesAsync(user);
 
-                if (!user.IsActive)
-                {
-                    return ServiceResult<string>.Fail("Hesabınız yönetici tarafından pasife alınmıştır.", 403);
-                }
+                if (!user.IsActive) return ServiceResult<string>.Fail("Hesabınız pasif.", 403);
 
                 if (!userRoles.Contains("Admin") && !string.IsNullOrEmpty(user.TenantId))
                 {
                     var tenant = await _tenantRepository.GetByIdAsync(user.TenantId);
-
-                    if (tenant == null || tenant.IsDeleted || !tenant.IsActive)
-                    {
-                        return ServiceResult<string>.Fail("Bağlı olduğunuz firma hesabı aktif değildir veya silinmiştir.", 403);
-                    }
-
-                    if (!tenant.SubscriptionEndDate.HasValue)
-                    {
-                        return ServiceResult<string>.Fail("Firmanıza tanımlı herhangi bir abonelik bulunamadı.", 403);
-                    }
-
-                    if (tenant.SubscriptionEndDate.Value < DateTime.UtcNow)
-                    {
-                        string bitisTarihi = tenant.SubscriptionEndDate.Value.ToString("dd.MM.yyyy");
-                        return ServiceResult<string>.Fail($"Abonelik süreniz {bitisTarihi} tarihinde dolmuştur.", 403);
-                    }
+                    if (tenant == null || !tenant.IsActive) return ServiceResult<string>.Fail("Firma aktif değil.", 403);
+                    if (!tenant.SubscriptionEndDate.HasValue) return ServiceResult<string>.Fail("Abonelik yok.", 403);
+                    if (tenant.SubscriptionEndDate.Value < DateTime.UtcNow) return ServiceResult<string>.Fail("Abonelik doldu.", 403);
                 }
 
-                // 1. Standart Claimler
+                // 1. Session İşlemleri
+                var newSessionId = Guid.NewGuid().ToString();
+
+                var existingSession = await _activeSessionRepo
+                    .Where(x => x.UserId == user.Id && x.ClientSource == model.ClientSource)
+                    .FirstOrDefaultAsync();
+
+                if (existingSession != null)
+                {
+                    existingSession.SessionId = newSessionId;
+                    existingSession.LastLoginDate = DateTime.UtcNow;
+                    _activeSessionRepo.Update(existingSession);
+                }
+                else
+                {
+                    await _activeSessionRepo.AddAsync(new UserActiveSession
+                    {
+                        UserId = user.Id,
+                        ClientSource = model.ClientSource,
+                        SessionId = newSessionId,
+                        LastLoginDate = DateTime.UtcNow
+                    });
+                }
+                await _context.SaveChangesAsync();
+
+                // 2. Token Claims
                 var authClaims = new List<Claim>
                 {
                     new Claim(JwtRegisteredClaimNames.Sub, user.UserName ?? ""),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim("userId", user.Id),
                     new Claim("email", user.Email ?? ""),
-                    new Claim("fullName", user.FullName ?? "")
+                    new Claim("fullName", user.FullName ?? ""),
+                    new Claim("SessionId", newSessionId),
+                    new Claim("ClientSource", model.ClientSource.ToString())
                 };
 
-                // 2. Tenant Bilgilerini Ekleme
                 if (!string.IsNullOrEmpty(user.TenantId))
                 {
                     authClaims.Add(new Claim("tenantId", user.TenantId));
-
                     var tenant = await _tenantRepository.GetByIdAsync(user.TenantId);
-                    if (tenant != null)
-                    {
-                        authClaims.Add(new Claim("tenantName", tenant.Name));
-
-                        if (!string.IsNullOrEmpty(tenant.LogoUrl))
-                        {
-                            authClaims.Add(new Claim("tenantLogoUrl", tenant.LogoUrl));
-                        }
-
-                        // Frontend için abonelik bitişi
-                        if (tenant.SubscriptionEndDate.HasValue)
-                        {
-                            authClaims.Add(new Claim("subscriptionEndDate", tenant.SubscriptionEndDate.Value.ToString("O")));
-                        }
-                    }
+                    if (tenant != null) authClaims.Add(new Claim("tenantName", tenant.Name));
                 }
-
-                // 3. Rolleri Ekle
                 authClaims.AddRange(userRoles.Select(role => new Claim("roles", role)));
 
+                DateTime tokenExpiration = userRoles.Any(r => r.Equals("Viewer", StringComparison.OrdinalIgnoreCase))
+                    ? DateTime.UtcNow.AddMinutes(60)
+                    : DateTime.UtcNow.AddMonths(6);
 
-                // ==============================================================================
-                // 🔥 KRİTİK DEĞİŞİKLİK: ROL BAZLI TOKEN SÜRESİ BELİRLEME
-                // ==============================================================================
-
-                DateTime tokenExpiration;
-
-                // "Viewer" rolü var mı kontrol ediyoruz (Büyük/Küçük harf duyarsız kontrol daha güvenlidir)
-                bool isViewer = userRoles.Any(r => r.Equals("Viewer", StringComparison.OrdinalIgnoreCase));
-
-                if (isViewer)
-                {
-                    // Eğer Viewer ise sadece 15 Dakika
-                    tokenExpiration = DateTime.UtcNow.AddMinutes(60);
-                }
-                else
-                {
-                    // Admin veya User (Dükkan Sahibi) ise 6 Ay
-                    tokenExpiration = DateTime.UtcNow.AddMonths(6);
-                }
-
-                // Token üretirken hesapladığımız süreyi gönderiyoruz
                 var token = GetToken(authClaims, tokenExpiration);
-
-
                 var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
 
-                // Login Loglama
                 await LogLoginInternalAsync(user.Id, user.UserName);
+
+                // 🔥 DEĞİŞİKLİK: Interface üzerinden Hub'ı tetikliyoruz
+                // API katmanında yazdığımız SignalRSessionService çalışacak
+                await _sessionNotificationService.SendForceCheckSession(user.Id, newSessionId, model.ClientSource.ToString());
 
                 return ServiceResult<string>.Success(tokenString, 200);
             }
-
             return ServiceResult<string>.Fail("Kullanıcı adı veya şifre hatalı!", 401);
         }
-
-        // DEĞİŞİKLİK: Metot artık dışarıdan 'expires' parametresi alıyor
         private JwtSecurityToken GetToken(List<Claim> authClaims, DateTime expires)
         {
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-
             return new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"], // Best practice: Audience da eklenmeli
-                expires: expires, // 🔥 Hesaplanan süre buraya geliyor
+                audience: _configuration["Jwt:Audience"],
+                expires: expires,
                 claims: authClaims,
                 signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
             );

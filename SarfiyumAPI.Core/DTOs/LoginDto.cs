@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SarfiyumAPI.Core.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,5 +11,6 @@ namespace SarfiyumAPI.Core.DTOs
     {
         public string Username { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+        public ClientSource ClientSource { get; set; } = ClientSource.Web;
     }
 }

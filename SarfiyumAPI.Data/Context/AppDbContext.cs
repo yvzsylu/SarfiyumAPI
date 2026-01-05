@@ -22,6 +22,7 @@ namespace SarfiyumAPI.Data.Context
 
         public DbSet<UserLoginHistory> UserLoginHistories { get; set; }
 
+        public DbSet<UserActiveSession> UserActiveSessions { get; set; }
 
 
         // --- 🗑️ SİLİNEN ESKİ TABLOLAR ---

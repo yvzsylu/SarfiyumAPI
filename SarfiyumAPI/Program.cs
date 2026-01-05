@@ -77,7 +77,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ITenantSettingsService, TenantSettingsService>();
 builder.Services.AddScoped<IViewerAccountService, ViewerAccountService>();
 
-
+builder.Services.AddScoped<ISessionNotificationService, SarfiyumAPI.Services.SignalRSessionService>();
 
 // Önce eski kaydı silin: builder.Services.AddHostedService<GoldPriceHostedService>();
 
@@ -201,6 +201,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseAuthentication();
+app.UseMiddleware<SarfiyumAPI.Middlewares.SessionCheckMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
