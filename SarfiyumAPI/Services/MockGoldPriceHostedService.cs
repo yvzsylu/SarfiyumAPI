@@ -106,6 +106,7 @@ namespace SarfiyumAPI.Services
                     {
                         Symbol = product.Name, // Angular'da görünecek isim (Örn: "Has Altın")
                         Category = product.TenantProductCategory?.Name ?? "Genel",
+                        CategoryIndex = product.TenantProductCategory?.OrderIndex ?? 0,
                         Description = product.Name,
                         Source = "MOCK-LIVE",
                         Timestamp = sourceData.Timestamp,

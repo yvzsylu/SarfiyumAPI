@@ -135,6 +135,7 @@ namespace SarfiyumAPI.Services
                             {
                                 Symbol = product.Name,
                                 Category = product.TenantProductCategory?.Name ?? "Genel",
+                                CategoryIndex = product.TenantProductCategory?.OrderIndex ?? 0,
                                 Description = product.Name,
                                 Source = "Sarfiyum",
                                 Timestamp = sourceData.Timestamp,

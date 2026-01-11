@@ -114,8 +114,8 @@ namespace SarfiyumAPI.Service.Services
             var catMaden = new TenantProductCategory { TenantId = tenant.Id, Name = "Maden", OrderIndex = 1 };
             var catDoviz = new TenantProductCategory { TenantId = tenant.Id, Name = "Döviz", OrderIndex = 2 };
             var catBilezik = new TenantProductCategory { TenantId = tenant.Id, Name = "Bilezik", OrderIndex = 3 }; // Boş gelecek
-            var catKredi = new TenantProductCategory { TenantId = tenant.Id, Name = "Kredi Kartı", OrderIndex = 4 }; // Boş gelecek
-            var catResat = new TenantProductCategory { TenantId = tenant.Id, Name = "Ata & Reşat", OrderIndex = 5}; // Boş gelecek
+            var catResat = new TenantProductCategory { TenantId = tenant.Id, Name = "Ata & Reşat", OrderIndex = 4 }; // Boş gelecek
+            var catKredi = new TenantProductCategory { TenantId = tenant.Id, Name = "Kredi Kartı", OrderIndex = 5 }; // Boş gelecek
 
 
             await _categoryRepository.AddRangeAsync(new[] { catMaden, catDoviz, catBilezik, catKredi });

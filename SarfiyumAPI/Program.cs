@@ -76,7 +76,7 @@ builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<ITenantSettingsService, TenantSettingsService>();
 builder.Services.AddScoped<IViewerAccountService, ViewerAccountService>();
-
+builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISessionNotificationService, SarfiyumAPI.Services.SignalRSessionService>();
 
 // Önce eski kaydı silin: builder.Services.AddHostedService<GoldPriceHostedService>();

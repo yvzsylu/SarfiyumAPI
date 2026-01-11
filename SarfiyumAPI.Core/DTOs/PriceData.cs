@@ -15,6 +15,9 @@ namespace SarfiyumAPI.Core.DTOs
         [JsonPropertyName("category")]
         public string Category { get; set; } = default!;// "MADEN"
 
+        [JsonPropertyName("categoryIndex")]
+        public int CategoryIndex { get; set; } = default!;// "MADEN"
+
         [JsonPropertyName("bid")]
         public decimal? Bid { get; set; } = default!; // Null gelebilir
 
