@@ -8,7 +8,9 @@ namespace SarfiyumAPI.Controllers.Customer
     [Route("api/customer/[controller]")]
     [Tags("Customer/Categories")]
     [ApiController]
-    [Authorize(Roles = "Admin,User")] // Yetki seviyesini kendine göre ayarla
+    // 🔥 DÜZELTME 1: Sınıf başındaki kısıtlamayı kaldırıp genel 'Authorize' yapıyoruz.
+    // Böylece Token'ı olan herkes (Viewer dahil) sınıfa girebilir.
+    [Authorize]
     public class CategoryController : CustomBaseController
     {
         private readonly ICategoryService _categoryService;
@@ -20,6 +22,8 @@ namespace SarfiyumAPI.Controllers.Customer
 
         // GET: api/customer/category/list
         [HttpGet("list")]
+        // 🔥 DÜZELTME 2: Listeleme işlemine "Viewer" iznini ekliyoruz.
+        [Authorize(Roles = "Admin,User,Viewer")]
         public async Task<IActionResult> GetCategories()
         {
             var tenantId = User.FindFirst("TenantId")?.Value;
@@ -31,6 +35,8 @@ namespace SarfiyumAPI.Controllers.Customer
         // PUT: api/customer/category/update/{id}
         // Body: { "name": "Yeni İsim" }
         [HttpPut("update/{id}")]
+        // 🔥 DÜZELTME 3: Güncelleme işleminde "Viewer" YOK! Sadece yetkililer.
+        [Authorize(Roles = "Admin,User")]
         public async Task<IActionResult> UpdateCategoryName(string id, [FromBody] UpdateCategoryNameDto model)
         {
             var tenantId = User.FindFirst("TenantId")?.Value;
