@@ -35,6 +35,10 @@ namespace SarfiyumAPI.Core.Interfaces
 
         Task<ServiceResult<List<SystemCatalogDto>>> GetAvailableCatalogItemsAsync();
 
+        Task<ServiceResult<string>> ToggleMobileStatusAsync(string tenantId, string productId);
+
+        Task<ServiceResult<string>> ToggleWebStatusAsync(string tenantId, string productId);
+
         // 8. Cache Temizleme
         void ClearCache(string tenantId);
     }

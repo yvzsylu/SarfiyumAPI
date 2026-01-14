@@ -105,7 +105,11 @@ namespace SarfiyumAPI.Service.Services
                 SellMultiplier = p.SellMultiplier,
                 AddonAmount = p.AddonAmount,
                 IsActive = p.IsActive,
-                OrderIndex = p.OrderIndex
+                OrderIndex = p.OrderIndex,
+                ShowOnMobile = p.ShowOnMobile,
+                ShowOnWeb = p.ShowOnWeb
+                
+
             }).ToList();
 
             return ServiceResult<List<TenantSettingResponseDto>>.Success(responseList);
@@ -152,7 +156,9 @@ namespace SarfiyumAPI.Service.Services
                 AddonAmount = model.AddonAmount,
 
                 OrderIndex = model.OrderIndex,
-                IsActive = true
+                IsActive = true,
+                ShowOnMobile = model.ShowOnMobile,
+                ShowOnWeb = model.ShowOnWeb
             };
 
             await _productRepository.AddAsync(newProduct);
@@ -186,6 +192,8 @@ namespace SarfiyumAPI.Service.Services
                     product.AddonAmount = updateItem.AddonAmount;
                     product.IsActive = updateItem.IsActive;
                     product.TenantProductCategoryId = updateItem.CategoryId;    
+                    product.ShowOnWeb = updateItem.ShowOnWeb;
+                    product.ShowOnMobile = updateItem.ShowOnMobile;
                     _productRepository.Update(product);
                     dataChanged = true;
                 }
@@ -199,6 +207,52 @@ namespace SarfiyumAPI.Service.Services
 
             return ServiceResult<string>.Success("Ürünler güncellendi.", 200);
         }
+
+
+        public async Task<ServiceResult<string>> ToggleWebStatusAsync(string tenantId, string productId)
+        {
+            var product = await _productRepository
+                .Where(x => x.Id == productId && x.TenantId == tenantId)
+                .FirstOrDefaultAsync();
+
+            if (product == null)
+                return ServiceResult<string>.Fail("Ürün bulunamadı.", 404);
+
+            // Mevcut durumun tersini al
+            product.ShowOnWeb = !product.ShowOnWeb;
+
+            _productRepository.Update(product);
+            await _context.SaveChangesAsync();
+
+            ClearCache(tenantId);
+
+            return ServiceResult<string>.Success(product.ShowOnWeb ? "Ürün Web'de aktif edildi." : "Ürün Web'den gizlendi.", 200);
+        }
+
+
+
+
+        // 2. MOBİL GÖRÜNÜRLÜĞÜNÜ DEĞİŞTİR (Toggle)
+        public async Task<ServiceResult<string>> ToggleMobileStatusAsync(string tenantId, string productId)
+        {
+            var product = await _productRepository
+                .Where(x => x.Id == productId && x.TenantId == tenantId)
+                .FirstOrDefaultAsync();
+
+            if (product == null)
+                return ServiceResult<string>.Fail("Ürün bulunamadı.", 404);
+
+            // Mevcut durumun tersini al
+            product.ShowOnMobile = !product.ShowOnMobile;
+
+            _productRepository.Update(product);
+            await _context.SaveChangesAsync();
+
+            ClearCache(tenantId);
+
+            return ServiceResult<string>.Success(product.ShowOnMobile ? "Ürün Mobilde aktif edildi." : "Ürün Mobilden gizlendi.", 200);
+        }
+
 
         // 6. UI: TEKİL DURUM GÜNCELLEME (Aktif/Pasif)
         public async Task<ServiceResult<string>> UpdateProductStatusAsync(string tenantId, string productId, bool isActive)

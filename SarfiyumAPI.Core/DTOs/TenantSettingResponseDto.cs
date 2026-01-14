@@ -20,5 +20,8 @@ namespace SarfiyumAPI.Core.DTOs
         public bool IsActive { get; set; }
 
         public int OrderIndex { get; set; }
+
+        public bool ShowOnWeb { get; set; }
+        public bool ShowOnMobile { get; set; } 
     }
 }

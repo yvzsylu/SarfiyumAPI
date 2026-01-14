@@ -103,5 +103,20 @@ namespace SarfiyumAPI.Controllers.Customer
 
             return CreateActionResult(await _settingsService.GetAvailableCatalogItemsAsync());
         }
+
+
+        [HttpPatch("toggle-web/{id}")]
+        public async Task<IActionResult> ToggleWeb(string id)
+        {
+            var tenantId = User.FindFirst("TenantId")?.Value; // Token'dan tenantId alıyoruz
+            return CreateActionResult(await _settingsService.ToggleWebStatusAsync(tenantId, id));
+        }
+
+        [HttpPatch("toggle-mobile/{id}")]
+        public async Task<IActionResult> ToggleMobile(string id)
+        {
+            var tenantId = User.FindFirst("TenantId")?.Value;
+            return CreateActionResult(await _settingsService.ToggleMobileStatusAsync(tenantId, id));
+        }
     }
 }

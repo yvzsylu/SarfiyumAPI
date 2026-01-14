@@ -41,5 +41,7 @@ namespace SarfiyumAPI.Core.Entities
 
         public int OrderIndex { get; set; } // Ürün sırası
         public bool IsActive { get; set; } = true;
+        public bool ShowOnWeb { get; set; } = true;    // YENİ
+        public bool ShowOnMobile { get; set; } = true; // YENİ
     }
 }

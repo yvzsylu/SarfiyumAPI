@@ -17,5 +17,10 @@ namespace SarfiyumAPI.Core.DTOs
         public decimal AddonAmount { get; set; } = 0m;
 
         public int OrderIndex { get; set; } = 99; // Sıralama
+
+        public bool ShowOnWeb { get; set; } = true;
+        public bool ShowOnMobile { get; set; } = true;
+
+
     }
 }

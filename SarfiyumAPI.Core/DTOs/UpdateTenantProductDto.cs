@@ -18,5 +18,7 @@ namespace SarfiyumAPI.Core.DTOs
 
         public decimal AddonAmount { get; set; }
         public bool IsActive { get; set; }
+        public bool ShowOnWeb { get; set; }
+        public bool ShowOnMobile { get; set; }
     }
 }
