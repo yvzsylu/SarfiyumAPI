@@ -94,5 +94,14 @@ namespace SarfiyumAPI.Controllers.Customer
 
             return CreateActionResult(await _settingsService.UpdateProductOrderAsync(tenantId, model));
         }
+
+        [HttpGet("catalog-list")]
+        public async Task<IActionResult> GetCatalog()
+        {
+            var tenantId = User.FindFirst("TenantId")?.Value;
+            if (string.IsNullOrEmpty(tenantId)) return Unauthorized();
+
+            return CreateActionResult(await _settingsService.GetAvailableCatalogItemsAsync());
+        }
     }
 }

@@ -12,6 +12,7 @@ namespace SarfiyumAPI.Service.Services
         // Eski Repositoryler silindi. Yerine TenantProduct geldi.
         private readonly IRepository<TenantProduct> _productRepository;
         private readonly IRepository<TenantProductCategory> _categoryRepository;
+        private readonly IRepository<SystemCatalog> _catalogRepo;
 
         private readonly IDataContext _context;
         private readonly IMemoryCache _cache;
@@ -20,12 +21,14 @@ namespace SarfiyumAPI.Service.Services
             IRepository<TenantProduct> productRepository,
             IDataContext context,
             IMemoryCache cache,
-            IRepository<TenantProductCategory> categoryRepository)
+            IRepository<TenantProductCategory> categoryRepository,
+            IRepository<SystemCatalog> catalogRepo)
         {
             _productRepository = productRepository;
             _context = context;
             _cache = cache;
             _categoryRepository = categoryRepository;
+            _catalogRepo = catalogRepo;
         }
 
         // 1. WORKER SERVICE İÇİN CACHE'Lİ LİSTE GETİRME
@@ -56,6 +59,25 @@ namespace SarfiyumAPI.Service.Services
 
             return products;
         }
+
+
+
+        public async Task<ServiceResult<List<SystemCatalogDto>>> GetAvailableCatalogItemsAsync()
+        {
+            var catalogItems = await _catalogRepo.GetAllAsync();
+
+            var dtoList = catalogItems.Select(item => new SystemCatalogDto
+            {
+                SourceKey = item.SourceKey,
+                Name = item.Name
+            })
+            .OrderBy(x => x.Name) // Alfabetik sıra
+            .ToList();
+
+            return ServiceResult<List<SystemCatalogDto>>.Success(dtoList);
+        }
+
+
 
         // 2. UI (ANGULAR) İÇİN AYARLARI GETİRME
         // (Tenant paneline girdiği zaman göreceği liste)

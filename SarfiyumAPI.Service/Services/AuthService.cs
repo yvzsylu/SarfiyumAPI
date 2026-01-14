@@ -148,7 +148,7 @@ namespace SarfiyumAPI.Service.Services
                 // 3. TOKEN SÜRESİ VE OLUŞTURMA
                 // =================================================================
                 DateTime tokenExpiration = userRoles.Any(r => r.Equals("Viewer", StringComparison.OrdinalIgnoreCase))
-                    ? DateTime.UtcNow.AddMinutes(60)
+                    ? DateTime.UtcNow.AddMinutes(10)
                     : DateTime.UtcNow.AddMonths(6);
 
                 var token = GetToken(authClaims, tokenExpiration);

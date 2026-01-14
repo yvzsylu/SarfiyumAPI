@@ -327,7 +327,7 @@ namespace SarfiyumAPI.Data.Migrations
                         {
                             Id = "9245fe4a-d402-451c-b9ed-9c1a04247482",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "24752e1f-935b-4c2e-9ff9-bb6e9b8890e2",
+                            ConcurrencyStamp = "c43ca297-5fda-469d-8f29-e9b5644c0296",
                             Email = "yvzsylu@gmail.com",
                             EmailConfirmed = true,
                             FullName = "Yavuz Soylu",
@@ -335,11 +335,665 @@ namespace SarfiyumAPI.Data.Migrations
                             LockoutEnabled = false,
                             NormalizedEmail = "YVZSYLU@GMAIL.COM",
                             NormalizedUserName = "YVZSYLU",
-                            PasswordHash = "AQAAAAIAAYagAAAAEDJPsydUAug5WYp1/Itotbg8pWygJA+AiTtUfWGDqHVDVfURdQJxhc1alY0mtkpvFA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEPjXgbs4cArNJvpysX0dWvw08NuaJav5gMxj7QTI09YjjLpClAza+8PnGhJ/2Rhn3g==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "082884e9-1939-47f0-be69-fb4c0c9dd215",
+                            SecurityStamp = "277d1e79-7247-4e82-9bfb-314fdb3f8467",
                             TwoFactorEnabled = false,
                             UserName = "yvzsylu"
+                        });
+                });
+
+            modelBuilder.Entity("SarfiyumAPI.Core.Entities.SystemCatalog", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("CreatedByName")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModifiedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("ModifiedByName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RemovedById")
+                        .HasMaxLength(36)
+                        .HasColumnType("nvarchar(36)");
+
+                    b.Property<string>("RemovedByName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("SourceKey")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SystemCatalogs");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "3e5e0a19-40e4-4282-bc2b-ea6cab426c28",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4812),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Has Altın",
+                            SourceKey = "ALTIN"
+                        },
+                        new
+                        {
+                            Id = "cf1a6a0b-91e7-4e10-8f3a-b1bb3f6efa91",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4817),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Gümüş (TL)",
+                            SourceKey = "GUMTRY"
+                        },
+                        new
+                        {
+                            Id = "3420a40e-e199-414e-bca6-72e00e3d6f4a",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4897),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Gümüş (USD)",
+                            SourceKey = "GUMUSD"
+                        },
+                        new
+                        {
+                            Id = "0147833d-749b-44c8-8713-927e42d56a10",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4898),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Külçe Altın",
+                            SourceKey = "KULCEALTIN"
+                        },
+                        new
+                        {
+                            Id = "6523542b-6d14-4d59-9b8d-a0890b41cba1",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4900),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Ons Altın",
+                            SourceKey = "XAUUSD"
+                        },
+                        new
+                        {
+                            Id = "f30adef0-4c02-4e7b-b35e-f5eff097dea4",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4901),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Ons Gümüş",
+                            SourceKey = "XAGUSD"
+                        },
+                        new
+                        {
+                            Id = "6f34fe47-4cad-4784-9a75-2d4f0158481e",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4908),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Altın / Gümüş Rasyosu",
+                            SourceKey = "XAUXAG"
+                        },
+                        new
+                        {
+                            Id = "37cc9326-61b9-44cc-94ae-96d1d1651ce6",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4909),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Ons Altın (Euro)",
+                            SourceKey = "XAUEUR"
+                        },
+                        new
+                        {
+                            Id = "c5d40999-6df0-4175-ae60-20b348a9efb8",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4911),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Ons Platin",
+                            SourceKey = "XPTUSD"
+                        },
+                        new
+                        {
+                            Id = "da262fdf-f2fb-4d7c-8ae5-08195ad087bf",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4912),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Ons Paladyum",
+                            SourceKey = "XPDUSD"
+                        },
+                        new
+                        {
+                            Id = "021e2605-25af-4fae-890f-8a5db05eb939",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4914),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Platin (TL)",
+                            SourceKey = "PLATIN"
+                        },
+                        new
+                        {
+                            Id = "34793bba-e600-4977-97e4-2ecb6a820df1",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4915),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Paladyum (TL)",
+                            SourceKey = "PALADYUM"
+                        },
+                        new
+                        {
+                            Id = "38dfec6e-3e32-4bc5-b9ec-3ee6ffc2c026",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4916),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "22 Ayar Gram",
+                            SourceKey = "AYAR22"
+                        },
+                        new
+                        {
+                            Id = "77776985-f939-430b-b2ab-4f3518cd3511",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4918),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "14 Ayar Gram",
+                            SourceKey = "AYAR14"
+                        },
+                        new
+                        {
+                            Id = "cebcbea4-ce87-4b18-a092-7fe8eed8e7d3",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4921),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "5 Gram Altın",
+                            SourceKey = "5 Gr Gram Altın"
+                        },
+                        new
+                        {
+                            Id = "a1d3de16-2701-4b5c-b4a0-00b4a5409e7a",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4922),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "10 Gram Altın",
+                            SourceKey = "10 Gr Gram Altın"
+                        },
+                        new
+                        {
+                            Id = "1710bda0-788b-492d-95c7-7fdf8f56fb3f",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4923),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "20 Gram Altın",
+                            SourceKey = "20 Gr Gram Altın"
+                        },
+                        new
+                        {
+                            Id = "8030b298-52a8-41fc-93d8-1e58745fa3b1",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4925),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "50 Gram Altın",
+                            SourceKey = "50 Gr Gram Altın"
+                        },
+                        new
+                        {
+                            Id = "ca3c9293-2aae-4dcd-99b9-961e8db9fa40",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4926),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "100 Gram Altın",
+                            SourceKey = "100 Gr Gram Altın"
+                        },
+                        new
+                        {
+                            Id = "b92d3385-fa8b-42db-805f-f1578e034301",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4927),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Dolar / TL",
+                            SourceKey = "USDTRY"
+                        },
+                        new
+                        {
+                            Id = "d5bd049b-e61a-4aed-9ff6-8cf3dbf24933",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4929),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Euro / TL",
+                            SourceKey = "EURTRY"
+                        },
+                        new
+                        {
+                            Id = "e51cb105-31f4-4330-b2c7-337591459c8c",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4930),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Sterlin / TL",
+                            SourceKey = "GBPTRY"
+                        },
+                        new
+                        {
+                            Id = "5af4a3fc-a83a-4199-bdd1-9121d6ddb643",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4932),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "İsviçre Frangı",
+                            SourceKey = "CHFTRY"
+                        },
+                        new
+                        {
+                            Id = "a972cd4c-c210-431e-81cc-30660549d517",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4933),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Avustralya Doları",
+                            SourceKey = "AUDTRY"
+                        },
+                        new
+                        {
+                            Id = "698b1a23-debe-49f6-a9ac-7706df0c6ff4",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4935),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Kanada Doları",
+                            SourceKey = "CADTRY"
+                        },
+                        new
+                        {
+                            Id = "b6f84cd3-1d30-4d44-b99d-ceb1a6105d7b",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4936),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Suudi Arabistan Riyali",
+                            SourceKey = "SARTRY"
+                        },
+                        new
+                        {
+                            Id = "90746d2f-3fa1-4ac7-b7d4-3709a77e0c7c",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4937),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Japon Yeni",
+                            SourceKey = "JPYTRY"
+                        },
+                        new
+                        {
+                            Id = "dc9fee37-6956-4710-9975-745f2f3edebb",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4938),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Norveç Kronu",
+                            SourceKey = "NOKTRY"
+                        },
+                        new
+                        {
+                            Id = "c71bff00-9390-49bb-b556-27b43e4800f9",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4940),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "İsveç Kronu",
+                            SourceKey = "SEKTRY"
+                        },
+                        new
+                        {
+                            Id = "2cb2215f-bfd2-41b2-8c0c-f7460e10f308",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4941),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Danimarka Kronu",
+                            SourceKey = "DKKTRY"
+                        },
+                        new
+                        {
+                            Id = "cee74807-5ee5-40e7-8229-9f2c9c479cdd",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4944),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Euro / Dolar",
+                            SourceKey = "EURUSD"
+                        },
+                        new
+                        {
+                            Id = "79745894-e3fd-4372-863a-567dff9c25e6",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4945),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Sterlin / Dolar",
+                            SourceKey = "GBPUSD"
+                        },
+                        new
+                        {
+                            Id = "917dfe87-2f5d-4ec9-8c3a-e1adf09e224e",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4947),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Dolar / İsviçre Frangı",
+                            SourceKey = "USDCHF"
+                        },
+                        new
+                        {
+                            Id = "e0268a60-5b47-4e0d-8a3f-f07103e6d99a",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4949),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Dolar / Kanada Doları",
+                            SourceKey = "USDCAD"
+                        },
+                        new
+                        {
+                            Id = "90c73657-0ad1-442e-b3a7-def873707eed",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4950),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Avustralya Doları / Dolar",
+                            SourceKey = "AUDUSD"
+                        },
+                        new
+                        {
+                            Id = "b0229da4-4c8d-4464-adfc-a62b099dc15d",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4951),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Dolar / Suudi Riyali",
+                            SourceKey = "USDSAR"
+                        },
+                        new
+                        {
+                            Id = "b6e0532e-6f87-42a0-8e24-798b76bd3da4",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4953),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Dolar / Japon Yeni",
+                            SourceKey = "USDJPY"
+                        },
+                        new
+                        {
+                            Id = "57bc2753-9f09-4b6b-be97-6450ccef22a2",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4977),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Dolar / Norveç Kronu",
+                            SourceKey = "USDNOK"
+                        },
+                        new
+                        {
+                            Id = "24c28516-7a23-4161-bbc9-22de27d88d62",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4980),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Dolar / İsveç Kronu",
+                            SourceKey = "USDSEK"
+                        },
+                        new
+                        {
+                            Id = "e894de6c-91de-4f22-8bc9-b2a7d45e97ad",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4981),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Dolar / Danimarka Kronu",
+                            SourceKey = "USDDKK"
+                        },
+                        new
+                        {
+                            Id = "a60dfeed-7460-4067-b908-ba7ae44e6aae",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4983),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Dolar / Ruble",
+                            SourceKey = "USDRUB"
+                        },
+                        new
+                        {
+                            Id = "823ede87-005d-4516-bb9a-5fe2e5d2351e",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4984),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Euro / Sterlin",
+                            SourceKey = "EURGBP"
+                        },
+                        new
+                        {
+                            Id = "97dd4590-714e-4133-bd14-93f85291576e",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4985),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Euro / İsviçre Frangı",
+                            SourceKey = "EURCHF"
+                        },
+                        new
+                        {
+                            Id = "4906a5ab-043f-4f74-80ae-e2af76061443",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4987),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Yeni Çeyrek",
+                            SourceKey = "CEYREK_YENI"
+                        },
+                        new
+                        {
+                            Id = "8d92f0e5-1cd8-45da-9147-707616d6503a",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4988),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Yeni Yarım",
+                            SourceKey = "YARIM_YENI"
+                        },
+                        new
+                        {
+                            Id = "5001e96f-cbb5-4c24-92b1-81ab5df2b899",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4989),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Yeni Tam",
+                            SourceKey = "TEK_YENI"
+                        },
+                        new
+                        {
+                            Id = "e8ff9ece-5b95-4ebc-94d5-1688645d4e8f",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4991),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Yeni Ata",
+                            SourceKey = "ATA_YENI"
+                        },
+                        new
+                        {
+                            Id = "9d990c56-83aa-4c8b-90fb-44e3829c2e49",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4993),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Yeni 5'li Ata",
+                            SourceKey = "ATA5_YENI"
+                        },
+                        new
+                        {
+                            Id = "59a5f15e-f19e-49fd-ae47-a4e207653255",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4994),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Yeni Gremse",
+                            SourceKey = "GREMESE_YENI"
+                        },
+                        new
+                        {
+                            Id = "b2c16352-8e68-4a37-b575-70bf29a3c54c",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4995),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Eski Çeyrek",
+                            SourceKey = "CEYREK_ESKI"
+                        },
+                        new
+                        {
+                            Id = "9c0e53e6-805c-4105-a25a-3660db9be7ad",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4997),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Eski Yarım",
+                            SourceKey = "YARIM_ESKI"
+                        },
+                        new
+                        {
+                            Id = "04851f05-3bc4-4a7e-8189-0ef7d878d9f6",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4998),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Eski Tam",
+                            SourceKey = "TEK_ESKI"
+                        },
+                        new
+                        {
+                            Id = "a312277b-56fb-42ee-bb5c-f67ff38ce929",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(4999),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Eski Ata",
+                            SourceKey = "ATA_ESKI"
+                        },
+                        new
+                        {
+                            Id = "be776cc6-62dc-495b-a48d-01abe09621d7",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5001),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Eski 5'li Ata",
+                            SourceKey = "ATA5_ESKI"
+                        },
+                        new
+                        {
+                            Id = "c320d992-2c81-425b-a78f-2998cfd4e44c",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5003),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Eski Gremse",
+                            SourceKey = "GREMESE_ESKI"
+                        },
+                        new
+                        {
+                            Id = "184ec665-0169-42a0-8e99-146ca3a2f00d",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5004),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Parite USD",
+                            SourceKey = "PARUSD"
+                        },
+                        new
+                        {
+                            Id = "137336e1-c8d2-4c76-93e0-42ad54dd6ccd",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5006),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Parite Euro",
+                            SourceKey = "PAREUR"
+                        },
+                        new
+                        {
+                            Id = "885e4a1f-69e0-448b-994e-699e1dad4774",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5007),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Parite Sterlin",
+                            SourceKey = "PARGBP"
+                        },
+                        new
+                        {
+                            Id = "c392f349-31bb-4ae6-ae15-83340ccf0216",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5008),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Parite İsviçre Frangı",
+                            SourceKey = "PARCHF"
+                        },
+                        new
+                        {
+                            Id = "3db65fef-2106-403a-a916-31596dde2e8d",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5009),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Ons Altın (Sanal)",
+                            SourceKey = "XAUUSDS"
+                        },
+                        new
+                        {
+                            Id = "a2cd6f5b-6522-4fe2-bbf7-dc7decd05693",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5011),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Euro / Dolar (Sanal)",
+                            SourceKey = "EURUSDS"
+                        },
+                        new
+                        {
+                            Id = "3201efa4-ca19-4f05-afb0-cc13127fde6e",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5012),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Kilo Gümüş (USD)",
+                            SourceKey = "KXAGUSD"
+                        },
+                        new
+                        {
+                            Id = "94cd503f-8457-442a-a4c0-002f1cb13ccd",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5014),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Dolar / TL (Spot)",
+                            SourceKey = "XUSDTRY"
+                        },
+                        new
+                        {
+                            Id = "354ac8ba-9605-4b41-a2d8-cd0d52e3cf08",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5016),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Fark Euro",
+                            SourceKey = "FARKEUR"
+                        },
+                        new
+                        {
+                            Id = "e58e9cf4-3520-4e2b-b429-7bd6e8f8272b",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5017),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Fark Altın",
+                            SourceKey = "FARK"
+                        },
+                        new
+                        {
+                            Id = "53225a17-74c6-48e2-a46c-e6fe0bb6c8cc",
+                            CreatedAt = new DateTime(2026, 1, 14, 15, 32, 40, 63, DateTimeKind.Utc).AddTicks(5018),
+                            CreatedByName = "",
+                            IsDeleted = false,
+                            Name = "Vade Farkı",
+                            SourceKey = "VADE FARK"
                         });
                 });
 
