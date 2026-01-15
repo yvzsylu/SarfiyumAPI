@@ -27,7 +27,7 @@ namespace SarfiyumAPI.Data.Context
 
         public DbSet<SystemCatalog> SystemCatalogs { get; set; }
 
-
+        public DbSet<TenantSetting> TenantSettings { get; set; }
 
         // --- 🗑️ SİLİNEN ESKİ TABLOLAR ---
         // public DbSet<SymbolCategory> SymbolCategories { get; set; } 
@@ -98,6 +98,12 @@ namespace SarfiyumAPI.Data.Context
             builder.Entity<TenantProductCategory>().HasQueryFilter(e => !e.IsDeleted);
             builder.Entity<TenantProduct>().HasQueryFilter(e => !e.IsDeleted);
             builder.Entity<TenantPaymentHistory>().HasQueryFilter(e => !e.IsDeleted);
+
+
+
+            builder.Entity<TenantSetting>()
+            .HasIndex(x => x.TenantId)
+            .IsUnique(); // Her Tenant'ın sadece 1 ayar satırı olabilir
 
             // =========================================================================
             //  SEED DATA (AYNEN KORUNDU)

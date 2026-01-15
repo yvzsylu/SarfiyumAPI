@@ -100,7 +100,7 @@ namespace SarfiyumAPI.Services
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                var settingsService = scope.ServiceProvider.GetRequiredService<ITenantSettingsService>();
+                var settingsService = scope.ServiceProvider.GetRequiredService<IMultiplierSettingsService>();
                 var tenantService = scope.ServiceProvider.GetRequiredService<ITenantService>();
 
                 var activeTenantIds = await tenantService.GetActiveTenantIdsAsync();

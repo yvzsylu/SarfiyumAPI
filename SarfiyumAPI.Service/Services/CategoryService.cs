@@ -12,12 +12,12 @@ namespace SarfiyumAPI.Service.Services
         private readonly IDataContext _context;
 
         // 🔥 1. TenantSettingsService'i buraya çağırıyoruz (Cache silmek için)
-        private readonly ITenantSettingsService _tenantSettingsService;
+        private readonly IMultiplierSettingsService _tenantSettingsService;
 
         public CategoryService(
             IRepository<TenantProductCategory> categoryRepository,
             IDataContext context,
-            ITenantSettingsService tenantSettingsService) // Constructor'a ekle
+            IMultiplierSettingsService tenantSettingsService) // Constructor'a ekle
         {
             _categoryRepository = categoryRepository;
             _context = context;
