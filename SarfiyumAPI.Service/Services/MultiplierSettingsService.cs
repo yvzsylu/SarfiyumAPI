@@ -144,6 +144,19 @@ namespace SarfiyumAPI.Service.Services
             if (category == null)
                 return ServiceResult<string>.Fail("Geçersiz kategori.", 400);
 
+
+            // 🔥 YENİ EKLENEN KISIM: SIRA NUMARASI HESAPLAMA
+            // Tenant'a ait ürünlerin OrderIndex'lerini seç, en büyüğünü al.
+            // (int?) kullanıyoruz çünkü hiç ürün yoksa null dönebilir, null ise 0 kabul et.
+            var maxOrderIndex = await _productRepository
+                .Where(p => p.TenantId == tenantId)
+                .Select(p => (int?)p.OrderIndex)
+                .MaxAsync() ?? 0;
+
+            // Yeni sıra numarası sonuncunun 1 fazlası olsun
+            var newOrderIndex = maxOrderIndex + 1;
+
+
             var newProduct = new TenantProduct
             {
                 TenantId = tenantId,
@@ -155,7 +168,7 @@ namespace SarfiyumAPI.Service.Services
                 SellMultiplier = model.SellMultiplier,
                 AddonAmount = model.AddonAmount,
 
-                OrderIndex = model.OrderIndex,
+                OrderIndex = newOrderIndex,
                 IsActive = true,
                 ShowOnMobile = model.ShowOnMobile,
                 ShowOnWeb = model.ShowOnWeb

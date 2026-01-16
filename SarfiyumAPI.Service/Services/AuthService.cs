@@ -148,7 +148,7 @@ namespace SarfiyumAPI.Service.Services
                 // 3. TOKEN SÜRESİ VE OLUŞTURMA
                 // =================================================================
                 DateTime tokenExpiration = userRoles.Any(r => r.Equals("Viewer", StringComparison.OrdinalIgnoreCase))
-                    ? DateTime.UtcNow.AddMinutes(1)
+                    ? DateTime.UtcNow.AddMinutes(5)
                     : DateTime.UtcNow.AddMonths(6);
 
                 var token = GetToken(authClaims, tokenExpiration);
@@ -188,6 +188,17 @@ namespace SarfiyumAPI.Service.Services
 
             if (!user.IsActive)
                 return ServiceResult<string>.Fail("Hesabınız pasif durumdadır.", 403);
+
+
+            var isViewer = await _userManager.IsInRoleAsync(user, "Viewer");
+
+            // Alternatif: Eğer User tablonuzda direkt 'IsViewer' kolonu varsa: if (user.IsViewer)
+            if (isViewer)
+            {
+                return ServiceResult<string>.Fail("Görüntüleyici hesaplar şifresini yenileyemez.", 403);
+            }
+
+
 
             string newPassword = GenerateRandomPassword(8);
 
