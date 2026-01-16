@@ -148,7 +148,7 @@ namespace SarfiyumAPI.Service.Services
             // 🔥 YENİ EKLENEN KISIM: SIRA NUMARASI HESAPLAMA
             // Tenant'a ait ürünlerin OrderIndex'lerini seç, en büyüğünü al.
             // (int?) kullanıyoruz çünkü hiç ürün yoksa null dönebilir, null ise 0 kabul et.
-            var maxOrderIndex = await _productRepository
+            var maxOrderIndex = await _productRepository 
                 .Where(p => p.TenantId == tenantId)
                 .Select(p => (int?)p.OrderIndex)
                 .MaxAsync() ?? 0;
