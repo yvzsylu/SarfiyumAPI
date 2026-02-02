@@ -29,6 +29,9 @@ namespace SarfiyumAPI.Data.Context
 
         public DbSet<TenantSetting> TenantSettings { get; set; }
 
+        public DbSet<VisitorProductSetting> VisitorProductSettings { get; set; }
+
+
         // --- 🗑️ SİLİNEN ESKİ TABLOLAR ---
         // public DbSet<SymbolCategory> SymbolCategories { get; set; } 
         // public DbSet<Symbol> Symbols { get; set; }

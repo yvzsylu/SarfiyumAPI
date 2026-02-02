@@ -87,6 +87,11 @@ namespace SarfiyumAPI.Service.Services
                 {
                     existingSession.SessionId = newSessionId;
                     existingSession.LastLoginDate = DateTime.UtcNow;
+
+                    // 🔥 GÜNCELLEME: Eğer kullanıcı Tenant değiştirdiyse veya null geldiyse burayı da güncelle
+                    // (Mevcut session varsa TenantId'yi de güncel tutmak iyidir)
+                    existingSession.TenantId = user.TenantId ?? "";
+
                     _activeSessionRepo.Update(existingSession);
                 }
                 else
@@ -94,6 +99,9 @@ namespace SarfiyumAPI.Service.Services
                     await _activeSessionRepo.AddAsync(new UserActiveSession
                     {
                         UserId = user.Id,
+                        // 🔥 EKLEME: TenantId'yi User'dan alıp buraya ekliyoruz
+                        // Eğer user Admin ise ve TenantId null ise boş string atıyoruz.
+                        TenantId = user.TenantId ?? "",
                         ClientSource = model.ClientSource,
                         SessionId = newSessionId,
                         LastLoginDate = DateTime.UtcNow

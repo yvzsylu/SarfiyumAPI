@@ -76,6 +76,8 @@ builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IMultiplierSettingsService, MultiplierSettingsService>();
 builder.Services.AddScoped<ITenantSettingsService, TenantSettingsService>();
+builder.Services.AddScoped<IVisitorSettingService, VisitorSettingService>();
+
 
 builder.Services.AddScoped<IViewerAccountService, ViewerAccountService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();

@@ -14,6 +14,9 @@ namespace SarfiyumAPI.Core.Entities
         public string UserId { get; set; } = default!;
 
         [Required]
+        public string TenantId { get; set; } = default!;
+
+        [Required]
         public ClientSource ClientSource { get; set; } // Web mi Mobile mi?
 
         [Required]
