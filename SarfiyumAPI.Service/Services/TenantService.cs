@@ -118,7 +118,7 @@ namespace SarfiyumAPI.Service.Services
             var catKredi = new TenantProductCategory { TenantId = tenant.Id, Name = "Kredi Kartı", OrderIndex = 5 }; // Boş gelecek
 
 
-            await _categoryRepository.AddRangeAsync(new[] { catMaden, catDoviz, catBilezik, catKredi });
+            await _categoryRepository.AddRangeAsync(new[] { catMaden, catDoviz, catBilezik,catResat, catKredi });
             await _context.SaveChangesAsync(); // Kategori ID'leri oluşsun diye save ediyoruz.
 
             // ---------------------------------------------------------
