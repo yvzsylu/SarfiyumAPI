@@ -154,7 +154,10 @@ builder.Services.AddCors(options =>
     // 🔥 PROD: Sadece senin domainin (Güvenlik için şart)
     options.AddPolicy("ProdCors", policy =>
     {
-        policy.WithOrigins("https://www.sarfiyum.com", "https://sarfiyum.com")
+        policy.WithOrigins(
+            "https://www.sarfiyum.com", 
+            "https://sarfiyum.com", 
+            "https://portal.cilcilaltin.com")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); // SignalR için zorunlu
