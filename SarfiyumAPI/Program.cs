@@ -157,7 +157,8 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
             "https://www.sarfiyum.com", 
             "https://sarfiyum.com", 
-            "https://portal.cilcilaltin.com")
+            "https://portal.cilcilaltin.com",
+            "https://portal.altinkosenadirkuyumculuk.com")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials(); // SignalR için zorunlu
