@@ -7,6 +7,8 @@ using SocketIOClient;
 using SocketIOClient.Transport;
 using SarfiyumAPI.Core.Entities;
 using System.Linq;
+using System.Threading;       // YENİ EKLENDİ: SemaphoreSlim için
+using System.Diagnostics;     // YENİ EKLENDİ: Stopwatch (Performans Logu) için
 
 namespace SarfiyumAPI.Services
 {
@@ -18,6 +20,9 @@ namespace SarfiyumAPI.Services
         private SocketIOClient.SocketIO _client;
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, PriceData> _priceCache = new();
+
+        // 🔥 YENİ EKLENDİ: Thread yığılmasını önleyen asenkron kilit
+        private readonly SemaphoreSlim _broadcastLock = new SemaphoreSlim(1, 1);
 
         public GoldPriceHostedService(
             IHubContext<GoldHub> hubContext,
@@ -50,8 +55,20 @@ namespace SarfiyumAPI.Services
 
             _client.OnConnected += async (sender, e) => _logger.LogInformation($"✅ Socket.IO Bağlantısı Başarılı!");
 
+            // 🔥 YENİ EKLENDİ: Docker üzerinden takip edilebilecek Socket.IO kopma/hata logları
+            _client.OnDisconnected += (sender, e) => _logger.LogWarning($"[SOCKET] Bağlantı koptu. Sebep: {e}");
+            _client.OnReconnectAttempt += (sender, e) => _logger.LogInformation($"[SOCKET] Yeniden bağlanılıyor. Deneme: {e}");
+            _client.OnError += (sender, e) => _logger.LogError($"[SOCKET] Hata oluştu: {e}");
+
             _client.On("price_changed", async response =>
             {
+                // 🔥 YENİ EKLENDİ: Kilit Kontrolü. İşlem devam ediyorsa yeni gelen veri atlanır.
+                if (!_broadcastLock.Wait(0))
+                {
+                    _logger.LogWarning("[OVERLAP] Önceki yayın devam ediyor, yeni paket atlandı.");
+                    return;
+                }
+
                 try
                 {
                     var incomingList = response.GetValue<List<PriceData>>();
@@ -68,6 +85,11 @@ namespace SarfiyumAPI.Services
                 {
                     _logger.LogError($"Veri işleme hatası: {ex.Message}");
                 }
+                finally
+                {
+                    // 🔥 YENİ EKLENDİ: İşlem bitince (veya hata verirse) kilidi serbest bırak
+                    _broadcastLock.Release();
+                }
             });
 
             try { await _client.ConnectAsync(); }
@@ -83,6 +105,10 @@ namespace SarfiyumAPI.Services
 
         private async Task BroadcastToTenants()
         {
+            // 🔥 YENİ EKLENDİ: İşlem süresini ölçecek kronometre ve sayaç
+            var sw = Stopwatch.StartNew();
+            int broadcastCount = 0;
+
             using (var scope = _serviceProvider.CreateScope())
             {
                 var settingsService = scope.ServiceProvider.GetRequiredService<IMultiplierSettingsService>();
@@ -90,6 +116,8 @@ namespace SarfiyumAPI.Services
                 var visitorService = scope.ServiceProvider.GetRequiredService<IVisitorSettingService>(); // 🔥 YENİ
 
                 var activeTenantIds = await tenantService.GetActiveTenantIdsAsync();
+
+                // Tenant yoksa işlemi doğrudan sonlandır
                 if (activeTenantIds == null || !activeTenantIds.Any()) return;
 
                 // Cache'teki son durumu al
@@ -110,6 +138,7 @@ namespace SarfiyumAPI.Services
                     {
                         // Sadece standart gruba gönder
                         await _hubContext.Clients.Group($"{tenantId}_Standard").SendAsync("ReceivePrices", standardList);
+                        broadcastCount++; // 🔥 YENİ EKLENDİ
                     }
 
                     // -----------------------------------------------------------
@@ -125,8 +154,20 @@ namespace SarfiyumAPI.Services
 
                         // Doğrudan o kullanıcıya gönder
                         await _hubContext.Clients.Group(visitorSession.VisitorId).SendAsync("ReceivePrices", specialList);
+                        broadcastCount++; // 🔥 YENİ EKLENDİ
                     }
                 }
+            }
+
+            // 🔥 YENİ EKLENDİ: İşlem süresini loga yazdır
+            sw.Stop();
+            if (sw.ElapsedMilliseconds > 1000)
+            {
+                _logger.LogWarning($"[PERF] Broadcast geç tamamlandı: {sw.ElapsedMilliseconds}ms. Gönderim sayısı: {broadcastCount}");
+            }
+            else
+            {
+                _logger.LogDebug($"[PERF] Broadcast tamamlandı: {sw.ElapsedMilliseconds}ms. Gönderim sayısı: {broadcastCount}");
             }
         }
 
