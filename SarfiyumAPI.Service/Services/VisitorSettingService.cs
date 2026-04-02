@@ -10,7 +10,6 @@ namespace SarfiyumAPI.Service.Services
     public class VisitorSettingService : IVisitorSettingService
     {
         private readonly IRepository<VisitorProductSetting> _settingRepo;
-        private readonly IRepository<UserActiveSession> _sessionRepo; // Online userları bulmak için
         private readonly IDataContext _context; // SaveChanges için
         private readonly IMemoryCache _cache;
 
@@ -21,7 +20,6 @@ namespace SarfiyumAPI.Service.Services
             IMemoryCache cache)
         {
             _settingRepo = settingRepo;
-            _sessionRepo = sessionRepo;
             _context = context;
             _cache = cache;
         }
@@ -39,8 +37,7 @@ namespace SarfiyumAPI.Service.Services
 
         public async Task<List<VisitorSessionDto>> GetOnlineVisitorsWithSettingsAsync(string tenantId)
         {
-            // 🔥 1. ADIM: CACHE KONTROLÜ
-            // Önce hafızaya bak, veri varsa direkt dön (Veritabanına hiç gitme).
+            // 🔥 1. ADIM: UZUN SÜRELİ CACHE KONTROLÜ
             string cacheKey = $"OnlineVisitorSettings_{tenantId}";
 
             if (_cache.TryGetValue(cacheKey, out List<VisitorSessionDto> cachedResult))
@@ -48,37 +45,24 @@ namespace SarfiyumAPI.Service.Services
                 return cachedResult;
             }
 
-            // --- BURADAN AŞAĞISI SADECE 5 SANİYEDE BİR ÇALIŞIR ---
+            // --- BURADAN AŞAĞISI SADECE AYAR DEĞİŞTİĞİNDE ÇALIŞIR ---
 
-            // 2. ADIM: ONLINE USER SORGUSU
-            var onlineUserIds = await _sessionRepo
-                .Where(x => x.TenantId == tenantId)
-                .Select(x => x.UserId)
-                .Distinct()
-                .ToListAsync();
+            // 2. ADIM: ONLINE SORGUSUNU İPTAL ETTİK!
+            // SignalR offline gruba atılan veriyi sessizce çöpe atar. SQL'i yormaya gerek yok.
 
-            // Eğer kimse online değilse:
-            if (!onlineUserIds.Any())
-            {
-                // ÖNEMLİ: Boş listeyi de Cache'e atıyoruz! 
-                // Yoksa HostedService her saniye "Kimse var mı?" diye DB'yi darlamaya devam eder.
-                var emptyList = new List<VisitorSessionDto>();
-                _cache.Set(cacheKey, emptyList, TimeSpan.FromSeconds(5));
-
-                return emptyList;
-            }
-
-            // 3. ADIM: AYAR SORGUSU
+            // 3. ADIM: SADECE TENANT'A AİT AKTİF ÖZEL AYARLARI ÇEK
             var settings = await _settingRepo
-                .Where(x => x.TenantId == tenantId && x.IsActive && onlineUserIds.Contains(x.VisitorId))
+                .Where(x => x.TenantId == tenantId && x.IsActive)
                 .ToListAsync();
 
-            // Online kullanıcı var ama özel ayarları yoksa:
+            // Eğer firmanın hiçbir müşterisine tanımlı özel ayarı yoksa:
             if (!settings.Any())
             {
-                // Yine boş listeyi Cache'e atıyoruz.
                 var emptyList = new List<VisitorSessionDto>();
-                _cache.Set(cacheKey, emptyList, TimeSpan.FromSeconds(5));
+
+                // Cache süresini 5 saniyeden 1 SAATE çıkardık!
+                // Zaten sen Upsert/Delete metodlarında ClearCache yaptığın için veri anında güncellenir.
+                _cache.Set(cacheKey, emptyList, TimeSpan.FromHours(1));
 
                 return emptyList;
             }
@@ -93,10 +77,9 @@ namespace SarfiyumAPI.Service.Services
                 })
                 .ToList();
 
-            // 5. ADIM: SONUCU CACHE'LE
-            // 5 saniye boyunca bu tenant için tekrar DB'ye gitme.
+            // 5. ADIM: SONUCU UZUN SÜRELİ CACHE'LE (1 SAAT)
             var cacheOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromSeconds(5));
+                .SetAbsoluteExpiration(TimeSpan.FromHours(1));
 
             _cache.Set(cacheKey, result, cacheOptions);
 
