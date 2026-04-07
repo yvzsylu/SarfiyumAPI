@@ -35,9 +35,11 @@ namespace SarfiyumAPI.Service.Services
             return await _settingRepo.Where(x => x.VisitorId == visitorId && x.IsActive).AnyAsync();
         }
 
+
         public async Task<List<VisitorSessionDto>> GetOnlineVisitorsWithSettingsAsync(string tenantId)
         {
-            // 🔥 1. ADIM: UZUN SÜRELİ CACHE KONTROLÜ
+            // 1. ADIM: CACHE KONTROLÜ
+            // Online durumu değişken olduğu için cache süresini 30 saniye-1 dakika arası tutmak en sağlıklısıdır.
             string cacheKey = $"OnlineVisitorSettings_{tenantId}";
 
             if (_cache.TryGetValue(cacheKey, out List<VisitorSessionDto> cachedResult))
@@ -45,29 +47,24 @@ namespace SarfiyumAPI.Service.Services
                 return cachedResult;
             }
 
-            // --- BURADAN AŞAĞISI SADECE AYAR DEĞİŞTİĞİNDE ÇALIŞIR ---
-
-            // 2. ADIM: ONLINE SORGUSUNU İPTAL ETTİK!
-            // SignalR offline gruba atılan veriyi sessizce çöpe atar. SQL'i yormaya gerek yok.
-
-            // 3. ADIM: SADECE TENANT'A AİT AKTİF ÖZEL AYARLARI ÇEK
+            // 2. ADIM: AKILLI FİLTRELEME
+            // Sadece bu Tenant'a ait, IsActive olan VE şu an UserActiveSessions tablosunda kaydı olanları çekiyoruz.
             var settings = await _settingRepo
                 .Where(x => x.TenantId == tenantId && x.IsActive)
+                // 🔥 KRİTİK DOKUNUŞ: Sadece gerçekten online olanların ayarlarını getir
+                .Where(x => _context.Set<UserActiveSession>().Any(s => s.UserId == x.VisitorId))
                 .ToListAsync();
 
-            // Eğer firmanın hiçbir müşterisine tanımlı özel ayarı yoksa:
+            // Eğer online olup da özel ayarı olan kimse yoksa:
             if (!settings.Any())
             {
                 var emptyList = new List<VisitorSessionDto>();
-
-                // Cache süresini 5 saniyeden 1 SAATE çıkardık!
-                // Zaten sen Upsert/Delete metodlarında ClearCache yaptığın için veri anında güncellenir.
-                _cache.Set(cacheKey, emptyList, TimeSpan.FromHours(1));
-
+                // Boş listeyi 30 saniye cache'le ki her saniye DB'ye gitmesin
+                _cache.Set(cacheKey, emptyList, TimeSpan.FromSeconds(30));
                 return emptyList;
             }
 
-            // 4. ADIM: GRUPLAMA VE DTO ÇEVİRİMİ
+            // 3. ADIM: GRUPLAMA
             var result = settings
                 .GroupBy(x => x.VisitorId)
                 .Select(g => new VisitorSessionDto
@@ -77,14 +74,63 @@ namespace SarfiyumAPI.Service.Services
                 })
                 .ToList();
 
-            // 5. ADIM: SONUCU UZUN SÜRELİ CACHE'LE (1 SAAT)
-            var cacheOptions = new MemoryCacheEntryOptions()
-                .SetAbsoluteExpiration(TimeSpan.FromHours(1));
-
-            _cache.Set(cacheKey, result, cacheOptions);
+            // 4. ADIM: KISA SÜRELİ CACHE (30 Saniye)
+            // Online listesi 1 saat cache'lenemez çünkü kullanıcı girip çıkabilir. 
+            // 30 saniye performans için yeterlidir.
+            _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
 
             return result;
         }
+        //public async Task<List<VisitorSessionDto>> GetOnlineVisitorsWithSettingsAsync(string tenantId)
+        //{
+        //    // 🔥 1. ADIM: UZUN SÜRELİ CACHE KONTROLÜ
+        //    string cacheKey = $"OnlineVisitorSettings_{tenantId}";
+
+        //    if (_cache.TryGetValue(cacheKey, out List<VisitorSessionDto> cachedResult))
+        //    {
+        //        return cachedResult;
+        //    }
+
+        //    // --- BURADAN AŞAĞISI SADECE AYAR DEĞİŞTİĞİNDE ÇALIŞIR ---
+
+        //    // 2. ADIM: ONLINE SORGUSUNU İPTAL ETTİK!
+        //    // SignalR offline gruba atılan veriyi sessizce çöpe atar. SQL'i yormaya gerek yok.
+
+        //    // 3. ADIM: SADECE TENANT'A AİT AKTİF ÖZEL AYARLARI ÇEK
+        //    var settings = await _settingRepo
+        //        .Where(x => x.TenantId == tenantId && x.IsActive)
+        //        .ToListAsync();
+
+        //    // Eğer firmanın hiçbir müşterisine tanımlı özel ayarı yoksa:
+        //    if (!settings.Any())
+        //    {
+        //        var emptyList = new List<VisitorSessionDto>();
+
+        //        // Cache süresini 5 saniyeden 1 SAATE çıkardık!
+        //        // Zaten sen Upsert/Delete metodlarında ClearCache yaptığın için veri anında güncellenir.
+        //        _cache.Set(cacheKey, emptyList, TimeSpan.FromHours(1));
+
+        //        return emptyList;
+        //    }
+
+        //    // 4. ADIM: GRUPLAMA VE DTO ÇEVİRİMİ
+        //    var result = settings
+        //        .GroupBy(x => x.VisitorId)
+        //        .Select(g => new VisitorSessionDto
+        //        {
+        //            VisitorId = g.Key,
+        //            Settings = g.ToList()
+        //        })
+        //        .ToList();
+
+        //    // 5. ADIM: SONUCU UZUN SÜRELİ CACHE'LE (1 SAAT)
+        //    var cacheOptions = new MemoryCacheEntryOptions()
+        //        .SetAbsoluteExpiration(TimeSpan.FromHours(1));
+
+        //    _cache.Set(cacheKey, result, cacheOptions);
+
+        //    return result;
+        //}
 
         // ========================================================================
         // 2. CRUD METHODS (CONTROLLER)
