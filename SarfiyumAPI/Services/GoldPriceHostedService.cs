@@ -105,7 +105,6 @@ namespace SarfiyumAPI.Services
 
         private async Task BroadcastToTenants()
         {
-            // 🔥 YENİ EKLENDİ: İşlem süresini ölçecek kronometre ve sayaç
             var sw = Stopwatch.StartNew();
             int broadcastCount = 0;
 
@@ -113,53 +112,49 @@ namespace SarfiyumAPI.Services
             {
                 var settingsService = scope.ServiceProvider.GetRequiredService<IMultiplierSettingsService>();
                 var tenantService = scope.ServiceProvider.GetRequiredService<ITenantService>();
-                var visitorService = scope.ServiceProvider.GetRequiredService<IVisitorSettingService>(); // 🔥 YENİ
+                var visitorService = scope.ServiceProvider.GetRequiredService<IVisitorSettingService>();
 
                 var activeTenantIds = await tenantService.GetActiveTenantIdsAsync();
-
-                // Tenant yoksa işlemi doğrudan sonlandır
                 if (activeTenantIds == null || !activeTenantIds.Any()) return;
 
-                // Cache'teki son durumu al
                 var latestMarketData = _priceCache.Values.ToDictionary(x => x.Symbol, x => x);
+
+                // 🔥 TÜM GÖNDERİM GÖREVLERİNİ BURADA TOPLAYACAĞIZ
+                var broadcastTasks = new List<Task>();
 
                 foreach (var tenantId in activeTenantIds)
                 {
                     var myProducts = await settingsService.GetProductsAsync(tenantId);
                     if (myProducts == null || !myProducts.Any()) continue;
 
-                    // -----------------------------------------------------------
-                    // 1. STANDART YAYIN (GRUP)
-                    // -----------------------------------------------------------
-                    // Herkesin gördüğü varsayılan listeyi hesapla
+                    // 1. STANDART YAYIN HESAPLAMA
                     var standardList = CalculatePriceList(myProducts, latestMarketData, null);
-
                     if (standardList.Any())
                     {
-                        // Sadece standart gruba gönder
-                        await _hubContext.Clients.Group($"{tenantId}_Standard").SendAsync("ReceivePrices", standardList);
-                        broadcastCount++; // 🔥 YENİ EKLENDİ
+                        // 🔥 await demiyoruz! Listeye ekliyoruz ki hepsi aynı anda başlasın.
+                        broadcastTasks.Add(_hubContext.Clients.Group($"{tenantId}_Standard").SendAsync("ReceivePrices", standardList));
+                        broadcastCount++;
                     }
 
-                    // -----------------------------------------------------------
-                    // 2. ÖZEL KULLANICILAR (KİŞİYE ÖZEL)
-                    // -----------------------------------------------------------
-                    // Bu tenant'a bağlı olup şu an online olan ve özel ayarı olanları getir
+                    // 2. ÖZEL KULLANICILAR HESAPLAMA
                     var specialVisitors = await visitorService.GetOnlineVisitorsWithSettingsAsync(tenantId);
-
                     foreach (var visitorSession in specialVisitors)
                     {
-                        // Bu kullanıcıya özel listeyi hesapla (VisitorProductSettings gönderiyoruz)
                         var specialList = CalculatePriceList(myProducts, latestMarketData, visitorSession.Settings);
 
-                        // Doğrudan o kullanıcıya gönder
-                        await _hubContext.Clients.Group(visitorSession.VisitorId).SendAsync("ReceivePrices", specialList);
-                        broadcastCount++; // 🔥 YENİ EKLENDİ
+                        // 🔥 await demiyoruz! Doğrudan listeye ekliyoruz.
+                        broadcastTasks.Add(_hubContext.Clients.Group(visitorSession.VisitorId).SendAsync("ReceivePrices", specialList));
+                        broadcastCount++;
                     }
+                }
+
+                // 🔥 KRİTİK NOKTA: Tüm gönderimleri aynı anda paralel başlat ve hepsinin bitmesini bekle
+                if (broadcastTasks.Any())
+                {
+                    await Task.WhenAll(broadcastTasks);
                 }
             }
 
-            // 🔥 YENİ EKLENDİ: İşlem süresini loga yazdır
             sw.Stop();
             if (sw.ElapsedMilliseconds > 1000)
             {
@@ -167,7 +162,7 @@ namespace SarfiyumAPI.Services
             }
             else
             {
-                _logger.LogDebug($"[PERF] Broadcast tamamlandı: {sw.ElapsedMilliseconds}ms. Gönderim sayısı: {broadcastCount}");
+                _logger.LogInformation($"[PERF] Broadcast tamamlandı: {sw.ElapsedMilliseconds}ms. Gönderim sayısı: {broadcastCount}");
             }
         }
 
