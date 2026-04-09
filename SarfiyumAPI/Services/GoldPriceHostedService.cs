@@ -7,8 +7,8 @@ using SocketIOClient;
 using SocketIOClient.Transport;
 using SarfiyumAPI.Core.Entities;
 using System.Linq;
-using System.Threading;       // YENİ EKLENDİ: SemaphoreSlim için
-using System.Diagnostics;     // YENİ EKLENDİ: Stopwatch (Performans Logu) için
+using System.Threading;
+using System.Diagnostics;
 
 namespace SarfiyumAPI.Services
 {
@@ -21,8 +21,10 @@ namespace SarfiyumAPI.Services
         private readonly IConfiguration _configuration;
         private readonly ConcurrentDictionary<string, PriceData> _priceCache = new();
 
-        // 🔥 YENİ EKLENDİ: Thread yığılmasını önleyen asenkron kilit
         private readonly SemaphoreSlim _broadcastLock = new SemaphoreSlim(1, 1);
+
+        // 🔥 YENİ EKLENDİ: Son verinin geldiği zamanı tutar (Watchdog için)
+        private DateTime _lastDataReceivedTime = DateTime.UtcNow;
 
         public GoldPriceHostedService(
             IHubContext<GoldHub> hubContext,
@@ -53,16 +55,17 @@ namespace SarfiyumAPI.Services
                 ReconnectionDelay = 1000
             });
 
-            _client.OnConnected += async (sender, e) => _logger.LogInformation($"✅ Socket.IO Bağlantısı Başarılı!");
+            _client.OnConnected += async (sender, e) => _logger.LogInformation($"✅ [SOCKET] Bağlantı Başarılı!");
 
-            // 🔥 YENİ EKLENDİ: Docker üzerinden takip edilebilecek Socket.IO kopma/hata logları
             _client.OnDisconnected += (sender, e) => _logger.LogWarning($"[SOCKET] Bağlantı koptu. Sebep: {e}");
             _client.OnReconnectAttempt += (sender, e) => _logger.LogInformation($"[SOCKET] Yeniden bağlanılıyor. Deneme: {e}");
             _client.OnError += (sender, e) => _logger.LogError($"[SOCKET] Hata oluştu: {e}");
 
             _client.On("price_changed", async response =>
             {
-                // 🔥 YENİ EKLENDİ: Kilit Kontrolü. İşlem devam ediyorsa yeni gelen veri atlanır.
+                // 🔥 YENİ EKLENDİ: Veri geldiği an kronometreyi sıfırla
+                _lastDataReceivedTime = DateTime.UtcNow;
+
                 if (!_broadcastLock.Wait(0))
                 {
                     _logger.LogWarning("[OVERLAP] Önceki yayın devam ediyor, yeni paket atlandı.");
@@ -83,21 +86,54 @@ namespace SarfiyumAPI.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Veri işleme hatası: {ex.Message}");
+                    _logger.LogError($"[BROADCAST_ERROR] Veri işleme hatası: {ex.Message}\nStack: {ex.StackTrace}");
                 }
                 finally
                 {
-                    // 🔥 YENİ EKLENDİ: İşlem bitince (veya hata verirse) kilidi serbest bırak
                     _broadcastLock.Release();
                 }
             });
 
             try { await _client.ConnectAsync(); }
-            catch (Exception ex) { _logger.LogError($"Socket Hata: {ex.Message}"); }
+            catch (Exception ex) { _logger.LogError($"[SOCKET_ERROR] İlk Bağlantı Hatası: {ex.Message}"); }
 
+            // 🔥 YENİ EKLENDİ: Watchdog (Bekçi) Döngüsü
             while (!stoppingToken.IsCancellationRequested)
             {
-                await Task.Delay(1000, stoppingToken);
+                await Task.Delay(5000, stoppingToken);
+
+                var idleSeconds = (DateTime.UtcNow - _lastDataReceivedTime).TotalSeconds;
+
+                // Eğer 15 saniyeden uzun süredir fiyat gelmiyorsa soket sessizce düşmüş (Ghost Connection) demektir
+                if (idleSeconds > 15)
+                {
+                    _logger.LogWarning($"[WATCHDOG] {idleSeconds:F0} saniyedir Socket.IO verisi gelmiyor. Sessiz kopma tespit edildi, bağlantı sıfırlanıyor...");
+
+                    try
+                    {
+                        if (_client.Connected)
+                        {
+                            await _client.DisconnectAsync();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug($"[WATCHDOG] Kapanma sırasında beklenen hata: {ex.Message}");
+                    }
+
+                    await Task.Delay(1000, stoppingToken); // Bağlantının tam düşmesi için kısa bir bekleme
+
+                    try
+                    {
+                        await _client.ConnectAsync();
+                        _lastDataReceivedTime = DateTime.UtcNow; // Kronometreyi sıfırla ki ard üste tetiklenmesin
+                        _logger.LogInformation("[WATCHDOG] Socket.IO bağlantısı zorla yenilendi.");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError($"[WATCHDOG] Yeniden bağlanma başarısız: {ex.Message}");
+                    }
+                }
             }
 
             if (_client.Connected) await _client.DisconnectAsync();
@@ -108,51 +144,51 @@ namespace SarfiyumAPI.Services
             var sw = Stopwatch.StartNew();
             int broadcastCount = 0;
 
-            using (var scope = _serviceProvider.CreateScope())
+            try
             {
-                var settingsService = scope.ServiceProvider.GetRequiredService<IMultiplierSettingsService>();
-                var tenantService = scope.ServiceProvider.GetRequiredService<ITenantService>();
-                var visitorService = scope.ServiceProvider.GetRequiredService<IVisitorSettingService>();
-
-                var activeTenantIds = await tenantService.GetActiveTenantIdsAsync();
-                if (activeTenantIds == null || !activeTenantIds.Any()) return;
-
-                var latestMarketData = _priceCache.Values.ToDictionary(x => x.Symbol, x => x);
-
-                // 🔥 TÜM GÖNDERİM GÖREVLERİNİ BURADA TOPLAYACAĞIZ
-                var broadcastTasks = new List<Task>();
-
-                foreach (var tenantId in activeTenantIds)
+                using (var scope = _serviceProvider.CreateScope())
                 {
-                    var myProducts = await settingsService.GetProductsAsync(tenantId);
-                    if (myProducts == null || !myProducts.Any()) continue;
+                    var settingsService = scope.ServiceProvider.GetRequiredService<IMultiplierSettingsService>();
+                    var tenantService = scope.ServiceProvider.GetRequiredService<ITenantService>();
+                    var visitorService = scope.ServiceProvider.GetRequiredService<IVisitorSettingService>();
 
-                    // 1. STANDART YAYIN HESAPLAMA
-                    var standardList = CalculatePriceList(myProducts, latestMarketData, null);
-                    if (standardList.Any())
+                    var activeTenantIds = await tenantService.GetActiveTenantIdsAsync();
+                    if (activeTenantIds == null || !activeTenantIds.Any()) return;
+
+                    var latestMarketData = _priceCache.Values.ToDictionary(x => x.Symbol, x => x);
+
+                    var broadcastTasks = new List<Task>();
+
+                    foreach (var tenantId in activeTenantIds)
                     {
-                        // 🔥 await demiyoruz! Listeye ekliyoruz ki hepsi aynı anda başlasın.
-                        broadcastTasks.Add(_hubContext.Clients.Group($"{tenantId}_Standard").SendAsync("ReceivePrices", standardList));
-                        broadcastCount++;
+                        var myProducts = await settingsService.GetProductsAsync(tenantId);
+                        if (myProducts == null || !myProducts.Any()) continue;
+
+                        var standardList = CalculatePriceList(myProducts, latestMarketData, null);
+                        if (standardList.Any())
+                        {
+                            broadcastTasks.Add(_hubContext.Clients.Group($"{tenantId}_Standard").SendAsync("ReceivePrices", standardList));
+                            broadcastCount++;
+                        }
+
+                        var specialVisitors = await visitorService.GetOnlineVisitorsWithSettingsAsync(tenantId);
+                        foreach (var visitorSession in specialVisitors)
+                        {
+                            var specialList = CalculatePriceList(myProducts, latestMarketData, visitorSession.Settings);
+                            broadcastTasks.Add(_hubContext.Clients.Group(visitorSession.VisitorId).SendAsync("ReceivePrices", specialList));
+                            broadcastCount++;
+                        }
                     }
 
-                    // 2. ÖZEL KULLANICILAR HESAPLAMA
-                    var specialVisitors = await visitorService.GetOnlineVisitorsWithSettingsAsync(tenantId);
-                    foreach (var visitorSession in specialVisitors)
+                    if (broadcastTasks.Any())
                     {
-                        var specialList = CalculatePriceList(myProducts, latestMarketData, visitorSession.Settings);
-
-                        // 🔥 await demiyoruz! Doğrudan listeye ekliyoruz.
-                        broadcastTasks.Add(_hubContext.Clients.Group(visitorSession.VisitorId).SendAsync("ReceivePrices", specialList));
-                        broadcastCount++;
+                        await Task.WhenAll(broadcastTasks);
                     }
                 }
-
-                // 🔥 KRİTİK NOKTA: Tüm gönderimleri aynı anda paralel başlat ve hepsinin bitmesini bekle
-                if (broadcastTasks.Any())
-                {
-                    await Task.WhenAll(broadcastTasks);
-                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"[BROADCAST_DB_ERROR] Veritabanı veya gönderim aşamasında hata: {ex.Message}");
             }
 
             sw.Stop();
@@ -166,7 +202,6 @@ namespace SarfiyumAPI.Services
             }
         }
 
-        // 🔥 TEK BİR HESAPLAMA METODU (Hem Standart Hem Özel İçin)
         private List<PriceData> CalculatePriceList(
             List<TenantProduct> products,
             Dictionary<string, PriceData> marketData,
@@ -182,7 +217,6 @@ namespace SarfiyumAPI.Services
                     decimal sellMult = product.SellMultiplier;
                     decimal addon = product.AddonAmount;
 
-                    // 🔥 EĞER ÖZEL AYAR VARSA DEĞERLERİ EZ (OVERRIDE)
                     if (specialSettings != null)
                     {
                         var setting = specialSettings.FirstOrDefault(s => s.TenantProductId == product.Id);
@@ -194,7 +228,6 @@ namespace SarfiyumAPI.Services
                         }
                     }
 
-                    // Hesaplama
                     decimal finalBid = 0;
                     decimal finalAsk = 0;
 
