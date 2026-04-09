@@ -75,6 +75,7 @@ namespace SarfiyumAPI.Services
                 try
                 {
                     var incomingList = response.GetValue<List<PriceData>>();
+                    _logger.LogInformation($"[SOCKET_IN] Veri paketi alındı. İçindeki ürün sayısı: {incomingList?.Count ?? 0}");
                     if (incomingList != null && incomingList.Any())
                     {
                         foreach (var item in incomingList)
