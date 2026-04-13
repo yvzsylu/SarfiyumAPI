@@ -13,5 +13,7 @@ namespace SarfiyumAPI.Core.Interfaces
 
         Task<ServiceResult<TenantSettingsDto>> GetSettingsAsync(string tenantId);
         Task<ServiceResult<string>> UpdateSettingsAsync(string tenantId, UpdateTenantSettingsDto dto);
+        Task<ServiceResult<ThemeSettingsDto>> GetThemeSettingsAsync(string tenantId);
+        Task<ServiceResult<string>> UpdateThemeSettingsAsync(string tenantId, UpdateThemeSettingsDto dto);
     }
 }

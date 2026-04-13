@@ -19,5 +19,9 @@ namespace SarfiyumAPI.Core.Entities
         // İleride eklenebilecek örnekler (Şimdilik yorum satırı):
         // public string? ThemeColor { get; set; }
         // public bool ShowLogoInHeader { get; set; }
+
+        public string? DashboardTheme { get; set; }
+        public string? UiSettingsJson { get; set; }
+        public string? CustomColorsJson { get; set; }
     }
 }

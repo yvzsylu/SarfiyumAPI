@@ -8,7 +8,6 @@ namespace SarfiyumAPI.Controllers.Customer
 {
     [Route("api/customer/[controller]")]
     [Tags("Customer/Settings")]
-
     [ApiController]
     // 1. ADIM: Sınıf seviyesine "Viewer" eklendi. Artık içeri girebilir.
     [Authorize(Roles = "Admin,User,Viewer")]
@@ -52,6 +51,37 @@ namespace SarfiyumAPI.Controllers.Customer
             var result = await _settingsService.UpdateSettingsAsync(tenantId, dto);
 
             if (result.IsSuccess) return Ok(result);
+            return BadRequest(result);
+        }
+
+        // ---------------------------------------------------------------------
+        // ✅ YENİ EKLENEN TEMA GETİRME METODU
+        // ---------------------------------------------------------------------
+        [HttpGet("theme")]
+        public async Task<IActionResult> GetThemeSettings()
+        {
+            var tenantId = User.FindFirst("TenantId")?.Value;
+            if (string.IsNullOrEmpty(tenantId)) return Unauthorized();
+
+            var result = await _settingsService.GetThemeSettingsAsync(tenantId);
+            if (result.IsSuccess) return Ok(result);
+
+            return BadRequest(result);
+        }
+
+        // ---------------------------------------------------------------------
+        // ⛔ YENİ EKLENEN TEMA GÜNCELLEME METODU (Hata Düzeltildi: HttpPut yapıldı)
+        // ---------------------------------------------------------------------
+        [HttpPut("theme")]
+        [Authorize(Roles = "Admin,User")] // Sadece yetkili olanlar yazabilir
+        public async Task<IActionResult> UpdateThemeSettings([FromBody] UpdateThemeSettingsDto dto)
+        {
+            var tenantId = User.FindFirst("TenantId")?.Value;
+            if (string.IsNullOrEmpty(tenantId)) return Unauthorized();
+
+            var result = await _settingsService.UpdateThemeSettingsAsync(tenantId, dto);
+            if (result.IsSuccess) return Ok(result);
+
             return BadRequest(result);
         }
     }

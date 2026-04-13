@@ -78,5 +78,63 @@ namespace SarfiyumAPI.Service.Services
 
             return ServiceResult<string>.Success("Ayarlar başarıyla güncellendi.", 200);
         }
+
+        public async Task<ServiceResult<ThemeSettingsDto>> GetThemeSettingsAsync(string tenantId)
+        {
+            var settings = await _settingsRepository
+                .Where(x => x.TenantId == tenantId)
+                .FirstOrDefaultAsync();
+
+            if (settings == null)
+            {
+                settings = new TenantSetting
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    TenantId = tenantId,
+                    DashboardTheme = "flat-light",
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _settingsRepository.AddAsync(settings);
+                await _context.SaveChangesAsync();
+            }
+
+            var dto = new ThemeSettingsDto
+            {
+                DashboardTheme = settings.DashboardTheme,
+                UiSettingsJson = settings.UiSettingsJson,
+                CustomColorsJson = settings.CustomColorsJson
+            };
+
+            return ServiceResult<ThemeSettingsDto>.Success(dto);
+        }
+
+        public async Task<ServiceResult<string>> UpdateThemeSettingsAsync(string tenantId, UpdateThemeSettingsDto dto)
+        {
+            var settings = await _settingsRepository
+                .Where(x => x.TenantId == tenantId)
+                .FirstOrDefaultAsync();
+
+            if (settings == null)
+            {
+                settings = new TenantSetting
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    TenantId = tenantId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _settingsRepository.AddAsync(settings);
+            }
+
+            // Sadece tema ayarları güncellenir
+            settings.DashboardTheme = dto.DashboardTheme;
+            settings.UiSettingsJson = dto.UiSettingsJson;
+            settings.CustomColorsJson = dto.CustomColorsJson;
+            settings.ModifiedAt = DateTime.UtcNow;
+
+            _settingsRepository.Update(settings);
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<string>.Success("Tema ayarları güncellendi.", 200);
+        }
     }
 }
