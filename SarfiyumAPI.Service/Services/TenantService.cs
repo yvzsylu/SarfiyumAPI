@@ -128,38 +128,62 @@ namespace SarfiyumAPI.Service.Services
             int order = 0;
 
             // --- DÖVİZ ---
-            defaultProducts.Add(CreateProduct(tenant.Id, catDoviz.Id, "DOLAR/TRY", "USDTRY", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catDoviz.Id, "EURO/TRY", "EURTRY", ++order));
+
 
             // --- MADEN ---
             defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "HAS ALTN", "ALTIN", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "GÜMÜŞ", "GUMTRY", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "KÜLÇE ALTIN", "KULCEALTIN", ++order));
-
-            // Gramlar
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "24 AYAR GRAM", "KULCEALTIN", ++order));
             defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "22 AYAR GRAM", "AYAR22", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "14 AYAR GRAM", "AYAR14", ++order));
 
-            // Ziynetler (Yeni)
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ ÇEYREK", "CEYREK_YENI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ YARIM", "YARIM_YENI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ TAM", "TEK_YENI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ ATA", "ATA_YENI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ ATA 5'li", "ATA5_YENI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ GREMSE", "GREMESE_YENI", ++order));
-
-            // Ziynetler (Eski)
             defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ ÇEYREK", "CEYREK_ESKI", ++order));
             defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ YARIM", "YARIM_ESKI", ++order));
             defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ TAM", "TEK_ESKI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ ATA", "ATA_ESKI", ++order));
-            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ ATA 5'li", "ATA5_ESKI", ++order));
+
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ ÇEYREK", "CEYREK_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ YARIM", "YARIM_YENI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ TAM", "TEK_YENI", ++order));
+
+
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ GREMSE", "GREMESE_YENI", ++order));
             defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ GREMSE", "GREMESE_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "14 AYAR GRAM", "AYAR14", ++order));
+
+
+            // DOVİZ
+            defaultProducts.Add(CreateProduct(tenant.Id, catDoviz.Id, "DOLAR/TRY", "USDTRY", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catDoviz.Id, "EURO/TRY", "EURTRY", ++order));
+
+            //BİLEZİK
+            defaultProducts.Add(CreateProduct(tenant.Id, catBilezik.Id, "AJDA BİLEZİK", "ALTIN", ++order, sellMultiplier: 0.95m, buyMultiplier: 0.912m));
+            defaultProducts.Add(CreateProduct(tenant.Id, catBilezik.Id, "BURMA BİLEZİK", "ALTIN", ++order, sellMultiplier: 0.95m, buyMultiplier: 0.91m));
+            defaultProducts.Add(CreateProduct(tenant.Id, catBilezik.Id, "DESENLİ BİLEZİK", "ALTIN", ++order, sellMultiplier: 0.96m, buyMultiplier: 0.91m));
+
+
+            //ATA REŞAT
+            defaultProducts.Add(CreateProduct(tenant.Id, catResat.Id, "CUMHURİYET ATA", "ATA_ESKI", ++order));
+            defaultProducts.Add(CreateProduct(tenant.Id, catResat.Id, "REŞAT LİRA", "ALTIN", ++order, sellMultiplier: 7m, buyMultiplier: 6.68m));
+            defaultProducts.Add(CreateProduct(tenant.Id, catResat.Id, "REŞAT 2.5", "ALTIN", ++order, sellMultiplier: 17.5m, buyMultiplier: 16.625m));
+            defaultProducts.Add(CreateProduct(tenant.Id, catResat.Id, "REŞAT 5'Lİ", "ALTIN", ++order, sellMultiplier: 35m, buyMultiplier: 33m));
+
+            //KREDİ KARTI
+            defaultProducts.Add(CreateProduct(tenant.Id, catKredi.Id, "AJDA BİLEZİK", "ALTIN",++order, sellMultiplier: 0.98m));
+            defaultProducts.Add(CreateProduct(tenant.Id, catKredi.Id, "ÇEYREK ALTIN", "ALTIN", ++order, sellMultiplier: 2.05m));
+            defaultProducts.Add(CreateProduct(tenant.Id, catKredi.Id, "24 AYAR GRAM", "ALTIN", ++order, sellMultiplier: 1.1m));
+
+            //PASİF
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "GÜMÜŞ", "GUMTRY", ++order, isActive: false));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ ATA", "ATA_YENI", ++order, isActive: false));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "YENİ ATA 5'li", "ATA5_YENI", ++order, isActive: false));
+            defaultProducts.Add(CreateProduct(tenant.Id, catMaden.Id, "ESKİ ATA 5'li", "ATA5_ESKI", ++order, isActive: false));
 
             // Bilezik ve Kredi Kartı kategorileri boş kalacak (User kendi ekleyecek)
 
             await _productRepository.AddRangeAsync(defaultProducts);
             await _context.SaveChangesAsync();
+
+
+            // gümüş, yeni ata, yeni ata 5'li, eski ata, eski ata 5'li pasife alınacak,
+
 
             // Cache Temizle
             ClearTenantCache();
@@ -167,7 +191,7 @@ namespace SarfiyumAPI.Service.Services
             return ServiceResult<string>.Success(tenant.Id, 201);
         }
 
-        private TenantProduct CreateProduct(string tenantId, string catId, string name, string sourceKey, int order)
+        private TenantProduct CreateProduct(string tenantId, string catId, string name, string sourceKey, int order,decimal buyMultiplier = 1.0m,decimal sellMultiplier = 1.0m,bool isActive = true)
         {
             return new TenantProduct
             {
@@ -175,11 +199,11 @@ namespace SarfiyumAPI.Service.Services
                 TenantProductCategoryId = catId,
                 Name = name,
                 SourceKey = sourceKey,
-                BuyMultiplier = 1.0m, // Ham veri olduğu için çarpan 1
-                SellMultiplier = 1.0m,
+                BuyMultiplier = buyMultiplier, 
+                SellMultiplier = sellMultiplier,
                 AddonAmount = 0m,
                 OrderIndex = order,
-                IsActive = true
+                IsActive = isActive
             };
         }
 
