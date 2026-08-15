@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SarfiyumAPI.Core.DTOs;
 using SarfiyumAPI.Core.Interfaces;
+using SarfiyumAPI.Core.Wrapper;
 
 namespace SarfiyumAPI.Controllers
 {
@@ -13,7 +15,7 @@ namespace SarfiyumAPI.Controllers
     [AllowAnonymous]
     [Route("api/[controller]")]
     [ApiController]
-    public class PublicController : ControllerBase
+    public class PublicController : CustomBaseController
     {
         private readonly ITenantService _tenantService;
 
@@ -27,15 +29,24 @@ namespace SarfiyumAPI.Controllers
         ///
         /// Slug geçersizse, tenant pasifse, aboneliği bitmişse ya da public yayını kapalıysa
         /// 404 döner — hepsi için AYNI cevap verilir ki hangi slug'ın var olduğu sızmasın.
+        ///
+        /// ⚠️ Cevap <see cref="ServiceResult{T}"/> ile sarmalanır. İstemciler (mobil
+        /// <c>BaseApiService</c>) gövdenin bu şekilde olmasını bekler ve gövdeyi
+        /// <c>data</c> alanından okur; DTO'yu çıplak döndürmek istemcide sessizce boş
+        /// veri olarak görünür.
         /// </summary>
         [HttpGet("tenant/{slug}")]
         public async Task<IActionResult> GetTenant(string slug)
         {
             var tenant = await _tenantService.GetPublicTenantAsync(slug);
 
-            if (tenant == null) return NotFound();
+            if (tenant == null)
+            {
+                return CreateActionResult(
+                    ServiceResult<PublicTenantDto>.Fail("Firma bulunamadı.", 404));
+            }
 
-            return Ok(tenant);
+            return CreateActionResult(ServiceResult<PublicTenantDto>.Success(tenant, 200));
         }
     }
 }
