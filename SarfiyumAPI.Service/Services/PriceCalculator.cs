@@ -71,19 +71,27 @@ namespace SarfiyumAPI.Service.Services
                     if (special.SpecialAddonAmount.HasValue) addon = special.SpecialAddonAmount.Value;
                 }
 
-                // Fiyat SADECE kaynak veri yoksa null gider. Eskiden "hesap sonucu <= 0 ise
-                // null" deniyordu; bu, yanlış çarpan/makas girilen bir üründe hatayı sessizce
-                // gizleyip istemcide boş/0 gösteriyordu (AGENTS.md M4). Artık hesap sonucu ne
-                // çıkarsa o gönderilir ve anormal durum loglanır.
-                decimal? finalBid = sourceData.Bid.HasValue
+                // "Fiyat verilmiyor" ile "yanlış yapılandırma" AYRI şeylerdir:
+                //
+                //  • Çarpan 0 ise kuyumcu o tarafta fiyat vermiyordur. Canlı veride bu çok
+                //    yaygın (örn. çeyrek altında yalnızca satış kote ediliyor). Bu durumda
+                //    `null` gönderilir ve istemcide hücre BOŞ kalır.
+                //  • Hesap sonucu NEGATİF ise bu gerçek bir hatadır (çarpan/makas yanlış).
+                //    Değer olduğu gibi gönderilir ve loglanır ki gizlenmesin (AGENTS.md M4).
+                //
+                // Eskiden kural `> 0 ? deger : null` idi; negatif fiyatı da gizlediği için
+                // yanlış yapılandırma fark edilmiyordu. Sonra tümüyle kaldırılmıştı, bu sefer
+                // de fiyat vermeyen ürünler ekranda "0,00" göstermeye başladı. Doğrusu ikisini
+                // ayırmaktır.
+                decimal? finalBid = sourceData.Bid.HasValue && buyMult != 0m
                     ? Round((sourceData.Bid.Value * buyMult) - addon)
                     : null;
 
-                decimal? finalAsk = sourceData.Ask.HasValue
+                decimal? finalAsk = sourceData.Ask.HasValue && sellMult != 0m
                     ? Round((sourceData.Ask.Value * sellMult) + addon)
                     : null;
 
-                if (finalBid <= 0 || finalAsk <= 0)
+                if (finalBid < 0 || finalAsk < 0)
                 {
                     WarnAboutPriceConfigOnce(product, finalBid, finalAsk, buyMult, sellMult, addon);
                 }
