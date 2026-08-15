@@ -1,4 +1,5 @@
 ﻿using SarfiyumAPI.Core.ValueObjects;
+using System.ComponentModel.DataAnnotations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,6 +32,29 @@ namespace SarfiyumAPI.Core.Entities
         // 2. Navigation Property: Geçmiş ödemelere erişmek için
         // İlişkiyi kuruyoruz (One-to-Many)
         public ICollection<TenantPaymentHistory> PaymentHistories { get; set; } = new List<TenantPaymentHistory>();
+
+        // --- PUBLIC (GİRİŞSİZ) FİYAT EKRANI ---
+
+        /// <summary>
+        /// Bu tenant'ın fiyatları girişsiz olarak yayınlanır mı?
+        ///
+        /// Varsayılan <c>false</c>: özellik açıkça açılmadıkça hiçbir tenant'ın fiyatları
+        /// anonim erişime açılmaz. Kapalıyken public yayın listesi hiç hesaplanmaz, yani
+        /// kapalı tenant'lar için sıfır ek maliyet.
+        /// </summary>
+        public bool IsPublicFeedEnabled { get; set; } = false;
+
+        /// <summary>
+        /// Public ekranın tenant'ı tanımasını sağlayan kısa ve tahmin edilemez anahtar
+        /// (örn. <c>altinkose</c>). Mobil uygulama build zamanında bunu taşır ve
+        /// <c>GET /api/public/tenant/{slug}</c> ile tenant'ı çözer.
+        ///
+        /// Neden tenant id'si değil: id doğrudan gömülseydi APK içinden okunabilir hale
+        /// gelirdi. Slug ise yalnızca public yayına erişim verir, başka hiçbir şeye yaramaz
+        /// ve değiştirilmesi kolaydır.
+        /// </summary>
+        [StringLength(64)]
+        public string? PublicSlug { get; set; }
 
 
         // --- OPSİYONEL HELPER (Veritabanına kaydedilmez) ---

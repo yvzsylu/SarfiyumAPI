@@ -16,17 +16,23 @@ namespace SarfiyumAPI.Hubs
     public class GoldHub : Hub
     {
         private readonly ILogger<GoldHub> _logger;
-        private readonly IRepository<UserActiveSession> _sessionRepo;
+        private readonly IActiveSessionCache _activeSessionCache;
         private readonly IVisitorSettingService _visitorSettingService; // 🔥 YENİ: Servis Eklendi
+        private readonly SarfiyumAPI.Services.IHubConnectionRegistry _connectionRegistry;
+        private readonly IPriceFeedStateTracker _feedState;
 
         public GoldHub(
             ILogger<GoldHub> logger,
-            IRepository<UserActiveSession> sessionRepo,
-            IVisitorSettingService visitorSettingService)
+            IActiveSessionCache activeSessionCache,
+            IVisitorSettingService visitorSettingService,
+            SarfiyumAPI.Services.IHubConnectionRegistry connectionRegistry,
+            IPriceFeedStateTracker feedState)
         {
             _logger = logger;
-            _sessionRepo = sessionRepo;
+            _activeSessionCache = activeSessionCache;
             _visitorSettingService = visitorSettingService;
+            _connectionRegistry = connectionRegistry;
+            _feedState = feedState;
         }
 
         public override async Task OnConnectedAsync()
@@ -41,11 +47,12 @@ namespace SarfiyumAPI.Hubs
             {
                 if (Enum.TryParse<ClientSource>(clientSourceStr, out var clientSource))
                 {
-                    var activeSession = await _sessionRepo
-                        .Where(x => x.UserId == userId && x.ClientSource == clientSource)
-                        .FirstOrDefaultAsync();
+                    // Eskiden burada doğrudan DB sorgusu vardı; TV ekranlarının reconnect
+                    // fırtınalarında veritabanını dövüyordu (AGENTS.md P6). Artık aynı
+                    // önbellekli servis kullanılıyor.
+                    var activeSessionId = await _activeSessionCache.GetSessionIdAsync(userId, clientSource);
 
-                    if (activeSession == null || activeSession.SessionId != tokenSessionId)
+                    if (activeSessionId == null || activeSessionId != tokenSessionId)
                     {
                         _logger.LogWarning($"[Security] User {userId} bağlantısı reddedildi.");
                         Context.Abort();
@@ -67,41 +74,80 @@ namespace SarfiyumAPI.Hubs
             }
 
             // ========================================================================
-            // 3. GRUPLAMA (BURASI DEĞİŞTİ)
+            // 3. GRUPLAMA — platform bazlı
             // ========================================================================
+            // Görünürlük filtresi (ShowOnWeb / ShowOnMobile) artık sunucuda uygulandığı için
+            // web ve mobil FARKLI listeler alır; dolayısıyla yayın grupları da platform
+            // bazlıdır (AGENTS.md P4). Platform, token'daki ClientSource'tan gelir.
             var tenantId = Context.User?.FindFirst("TenantId")?.Value;
+            var platform = ResolvePlatform(Context.User?.FindFirst("ClientSource")?.Value);
 
-            if (!string.IsNullOrEmpty(tenantId) && !string.IsNullOrEmpty(userId))
-            {
-                // 🔥 KONTROL: Bu kullanıcının özel bir fiyat ayarı var mı?
-                bool hasSpecial = await _visitorSettingService.HasSpecialSettingsAsync(userId);
-
-                if (hasSpecial)
-                {
-                    // Özel ayarı varsa GENEL gruba eklemiyoruz.
-                    // Bu kullanıcıya HostedService içinde Clients.User(userId) ile özel veri atacağız.
-                    _logger.LogInformation($"User {userId} özel ayarlara sahip. Standart gruba eklenmedi.");
-                }
-                else
-                {
-                    // Özel ayarı yoksa STANDART gruba ekle.
-                    // İsmini değiştirdik: "TenantId_Standard"
-                    await Groups.AddToGroupAsync(Context.ConnectionId, $"{tenantId}_Standard");
-                }
-            }
-            else
+            if (string.IsNullOrEmpty(tenantId) || string.IsNullOrEmpty(userId))
             {
                 Context.Abort();
                 return;
             }
 
-            // Admin işlemleri vs için User ID grubuna eklemeye devam edebiliriz
-            if (!string.IsNullOrEmpty(userId))
-            {
-                await Groups.AddToGroupAsync(Context.ConnectionId, userId);
-            }
+            // Bu kullanıcının özel bir fiyat ayarı var mı?
+            bool hasSpecial = await _visitorSettingService.HasSpecialSettingsAsync(userId);
+
+            var priceGroup = hasSpecial
+                ? IPriceFeedStateTracker.VisitorGroup(userId, platform)
+                : IPriceFeedStateTracker.StandardGroup(tenantId, platform);
+
+            await Groups.AddToGroupAsync(Context.ConnectionId, priceGroup);
+
+            // Kişiye özel sinyal grubu (ForceCheckSession, logout vb.).
+            await Groups.AddToGroupAsync(Context.ConnectionId, userId);
+
+            // Bağlantıyı kaydet: özel fiyat ayarı değiştiğinde grup üyeliğini canlı
+            // güncelleyebilmek ve bağlı olmayan viewer için boşa hesap yapmamak için gerekli.
+            _connectionRegistry.Add(userId, Context.ConnectionId, platform);
 
             await base.OnConnectedAsync();
+
+            // ========================================================================
+            // 4. BAĞLANTI ANINDA TAM LİSTE
+            // ========================================================================
+            // Delta yayınının ön koşulu: istemci ilk olarak tam listeyi almalı, aksi halde
+            // eline geçen ilk delta'yı boş bir listeye uygulamaya çalışır. Grup henüz hiç
+            // yayın almadıysa null döner — o durumda bir sonraki tick zaten snapshot gönderir.
+            //
+            // İstemci sözleşmesi: snapshot gelmeden önce ulaşan delta'lar YOK SAYILIR,
+            // ayrıca snapshot'takinden küçük/eşit `seq` taşıyan delta'lar da yok sayılır.
+            // Bu, buradan giden mesaj ile gruba giden yayının sırasının garanti olmamasını
+            // zararsız hale getirir.
+            var snapshot = _feedState.GetCurrentSnapshot(priceGroup);
+            if (snapshot != null)
+            {
+                await Clients.Caller.SendAsync("ReceivePriceSnapshot", snapshot);
+            }
+        }
+
+        /// <summary>
+        /// Token'daki <c>ClientSource</c> (Web=1 / Mobile=2) değerini yayın platformuna çevirir.
+        /// Okunamazsa Web varsayılır — eski istemciler için en güvenli taraf.
+        /// </summary>
+        private static PricePlatform ResolvePlatform(string? clientSourceClaim)
+        {
+            if (Enum.TryParse<ClientSource>(clientSourceClaim, out var source) && source == ClientSource.Mobile)
+            {
+                return PricePlatform.Mobile;
+            }
+
+            return PricePlatform.Web;
+        }
+
+        public override async Task OnDisconnectedAsync(Exception? exception)
+        {
+            var userId = Context.User?.FindFirst("userId")?.Value;
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                _connectionRegistry.Remove(userId, Context.ConnectionId);
+            }
+
+            await base.OnDisconnectedAsync(exception);
         }
 
         private async Task ScheduleDisconnect(TimeSpan delay, CancellationToken token)

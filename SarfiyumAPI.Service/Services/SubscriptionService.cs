@@ -12,16 +12,29 @@ namespace SarfiyumAPI.Service.Services
         private readonly IRepository<TenantPaymentHistory> _paymentRepository;
         private readonly IRepository<Tenant> _tenantRepository;
         private readonly IDataContext _context;
+        private readonly ITenantService _tenantService;
 
         public SubscriptionService(
             IRepository<TenantPaymentHistory> paymentRepository,
             IRepository<Tenant> tenantRepository,
-            IDataContext context)
+            IDataContext context,
+            ITenantService tenantService)
         {
             _paymentRepository = paymentRepository;
             _tenantRepository = tenantRepository;
             _context = context;
+            _tenantService = tenantService;
         }
+
+        /// <summary>
+        /// Aktif tenant listesi önbelleğini düşürür.
+        ///
+        /// <c>GetActiveTenantIdsAsync</c> artık <c>SubscriptionEndDate</c>'i de filtreliyor
+        /// (aboneliği biten tenant'ın yayını durur). Bu liste 10 dakika önbelleklendiği için,
+        /// abonelik değiştiren HER işlem önbelleği düşürmek zorunda — aksi halde aboneliği
+        /// yenilenen bir tenant 10 dakikaya kadar yayına dönemez.
+        /// </summary>
+        private void InvalidateBroadcastTenantList() => _tenantService.ClearTenantCache();
 
         // -----------------------------------------------------------
         // 1. YENİ ABONELİK EKLEME (Strict Mode & Standart Tipler)
@@ -84,6 +97,7 @@ namespace SarfiyumAPI.Service.Services
 
             _tenantRepository.Update(tenant);
             await _context.SaveChangesAsync();
+            InvalidateBroadcastTenantList();
 
             return ServiceResult<string>.Success($"Paket tanımlandı. Bitiş: {endDate:dd.MM.yyyy}", 200);
         }
@@ -145,6 +159,7 @@ namespace SarfiyumAPI.Service.Services
             _tenantRepository.Update(tenant);
 
             await _context.SaveChangesAsync();
+            InvalidateBroadcastTenantList();
 
             return ServiceResult<string>.Success($"Kayıt güncellendi. Yeni Bitiş: {newDate:dd.MM.yyyy}", 200);
         }
@@ -196,6 +211,7 @@ namespace SarfiyumAPI.Service.Services
             // Değişikliği veritabanına yansıt ki aşağıdaki sorguda bu kayıt gelmesin.
             // Transaction kullandığımız için eğer aşağıda hata olursa bu da geri alınır.
             await _context.SaveChangesAsync();
+            InvalidateBroadcastTenantList();
 
             // -----------------------------------------------------------------------
             // 4. SENKRONİZASYON: Geriye kalan paketlerin en ileri tarihini bul
@@ -219,6 +235,7 @@ namespace SarfiyumAPI.Service.Services
 
             _tenantRepository.Update(tenant);
             await _context.SaveChangesAsync();
+            InvalidateBroadcastTenantList();
 
             return ServiceResult<string>.Success("Abonelik silindi ve firma süresi yeniden hesaplandı.", 200);
         }
@@ -266,6 +283,7 @@ namespace SarfiyumAPI.Service.Services
             _tenantRepository.Update(tenant);
 
             await _context.SaveChangesAsync();
+            InvalidateBroadcastTenantList();
 
             return ServiceResult<string>.Success("Abonelik güncellendi.", 200);
         }

@@ -327,7 +327,7 @@ namespace SarfiyumAPI.Data.Migrations
                         {
                             Id = "9245fe4a-d402-451c-b9ed-9c1a04247482",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "4c2b75bb-6281-494f-bf12-66ae08643398",
+                            ConcurrencyStamp = "1732f5f1-4cd4-4abb-b106-f683133982e1",
                             Email = "yvzsylu@gmail.com",
                             EmailConfirmed = true,
                             FullName = "Yavuz Soylu",
@@ -335,9 +335,9 @@ namespace SarfiyumAPI.Data.Migrations
                             LockoutEnabled = false,
                             NormalizedEmail = "YVZSYLU@GMAIL.COM",
                             NormalizedUserName = "YVZSYLU",
-                            PasswordHash = "AQAAAAIAAYagAAAAEFgjPBl0knW3DHTDkQ82/sMyFID2Osw2r4UngbIDynlGGok2x5ZzRd0Lc7pGTH26Pw==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEBej2KnuI1stSY2jZb79QnHV5fhTg7tujf+uMfC0tBsU3R4inTHZO2oBt8fnVRrG7A==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "89992a4f-6f29-44d2-bfcb-58d20ff4dfd8",
+                            SecurityStamp = "67fbbd2e-2065-4ce4-82fc-526ed7055f07",
                             TwoFactorEnabled = false,
                             UserName = "yvzsylu"
                         });
@@ -403,8 +403,8 @@ namespace SarfiyumAPI.Data.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "2b9d172a-bcb0-4e87-9f96-dc924bbda7e2",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1562),
+                            Id = "9d65b63b-802e-432b-b3b1-e821b439b736",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9620),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Has Altın",
@@ -412,8 +412,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "9f603787-efb0-4239-8bd3-85dc26cf0f0f",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1567),
+                            Id = "b27c0fcf-fcef-4488-bbd3-0dde2fbc5212",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9630),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Gümüş (TL)",
@@ -421,8 +421,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "126282f3-e4de-4f43-8e21-41963475a507",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1569),
+                            Id = "71936f14-bb52-4785-a4ec-701ef9a9d962",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9632),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Gümüş (USD)",
@@ -430,8 +430,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "9167aee8-9888-48e8-b212-fcf9c6e17b49",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1570),
+                            Id = "812fe7ba-d7e6-45be-b517-47d6d9be1315",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9642),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Külçe Altın",
@@ -439,8 +439,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "30dd29ba-b3f3-4638-9f46-0c6c26dcc561",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1572),
+                            Id = "2f2146dd-527e-4450-9dac-53c7cb861528",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9644),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Ons Altın",
@@ -448,8 +448,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "0c568907-5d01-4cd6-9393-d0541beddf65",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1573),
+                            Id = "9b0c5d9a-100f-4ee0-bba8-e534c10a04ac",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9646),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Ons Gümüş",
@@ -457,8 +457,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "3bf5a90d-4b03-4227-9108-f5cef2a43636",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1575),
+                            Id = "9ce23a95-1e57-4ab1-a637-f4cf20e50274",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9647),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Altın / Gümüş Rasyosu",
@@ -466,8 +466,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "5e863af3-eeee-425f-881b-ced7d395942e",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1576),
+                            Id = "114ee66b-6f81-4ec9-b43a-b0fc2b1a66d5",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9648),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Ons Altın (Euro)",
@@ -475,8 +475,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "119334a2-6a0f-4d74-866f-f67e6630a950",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1579),
+                            Id = "45911a92-ba7f-418c-9754-359c7ed537b2",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9650),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Ons Platin",
@@ -484,8 +484,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "2cf11b00-7aae-47f6-a94e-afc8f3adc2bb",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1580),
+                            Id = "42e8565f-c670-4b03-be1d-6806d88301bb",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9652),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Ons Paladyum",
@@ -493,8 +493,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "8bac9862-142b-459e-9656-b4557b9c2308",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1581),
+                            Id = "27fc6c08-a4b4-4c9f-90c5-260a29db2a00",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9653),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Platin (TL)",
@@ -502,8 +502,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "655286ec-5ca9-4c2d-9d33-36668f06ff98",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1582),
+                            Id = "ead66cc0-9385-447b-a232-f07dc5f75c31",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9657),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Paladyum (TL)",
@@ -511,8 +511,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "78ace7a4-a48c-4388-84eb-52aef8c2588a",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1584),
+                            Id = "8de81025-0001-4770-a408-445c48f42cfb",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9832),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "22 Ayar Gram",
@@ -520,8 +520,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "58ef183e-22b8-4149-8421-134813ef5490",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1585),
+                            Id = "4b651f73-b8d1-4f06-aaf5-49baa4247e49",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9834),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "14 Ayar Gram",
@@ -529,8 +529,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "c109c745-49dd-4fbd-b387-b4b4f9534eb5",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1587),
+                            Id = "18358ed3-359a-4280-93c8-fe4ca656f331",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9836),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "5 Gram Altın",
@@ -538,8 +538,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "1809198c-d16f-4d91-a375-00b181b1cec9",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1588),
+                            Id = "43c28803-ab60-494c-97f0-410b39d14620",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9837),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "10 Gram Altın",
@@ -547,8 +547,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "a473a63f-148c-4450-9be7-60d2fb2014b3",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1591),
+                            Id = "cde7372c-c54a-411d-a6a8-0f17a86f7ded",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9838),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "20 Gram Altın",
@@ -556,8 +556,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "6063d8ad-f91d-4259-ace9-1e6476eb2a59",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1592),
+                            Id = "6d85bf28-e740-4b95-bd02-be1806a1b4e5",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9840),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "50 Gram Altın",
@@ -565,8 +565,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "a5b45e10-95f4-47cb-920d-0bfa39efa623",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1649),
+                            Id = "e2c324c0-a565-44c8-acd5-9ca84431bbcc",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9842),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "100 Gram Altın",
@@ -574,8 +574,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "73fbe254-8b98-4bd0-b24b-8999dd1d5feb",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1651),
+                            Id = "dec163b3-0e27-411b-8972-a899075dbbb7",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9844),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Dolar / TL",
@@ -583,8 +583,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "ac61b27c-3f7f-45f3-8d87-7fadfd402287",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1653),
+                            Id = "59f5fe5f-bd8b-4111-abe1-1a6b23bf82c4",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9846),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Euro / TL",
@@ -592,8 +592,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "e9efd503-a4e8-4712-8a89-ee9716c9f0a0",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1654),
+                            Id = "1ee280d8-7d2b-46ee-a2db-9e44d10dc194",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9847),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Sterlin / TL",
@@ -601,8 +601,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "d393c147-9ec0-4e25-a7c0-b5b1189fea9c",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1655),
+                            Id = "780e271f-f19a-4ac1-b9a0-ad604fc837f6",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9848),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "İsviçre Frangı",
@@ -610,8 +610,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "292642c7-610f-48c7-bb64-84501b000904",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1657),
+                            Id = "9428222d-0713-4c5e-974d-c6843c96893a",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9850),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Avustralya Doları",
@@ -619,8 +619,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "3bde7e34-b88a-44a5-9abc-3f61d768ca8e",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1660),
+                            Id = "bceca9f5-947c-4f8a-9a05-4519cd1cc836",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9851),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Kanada Doları",
@@ -628,8 +628,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "53cb044e-5a4d-47e5-b30f-6e134548a754",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1661),
+                            Id = "c6718e3f-cbaf-48c5-b79a-d0655328320b",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9853),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Suudi Arabistan Riyali",
@@ -637,8 +637,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "9e8e981f-3696-4dca-bd10-5135b34178e3",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1662),
+                            Id = "ac7de9df-1e73-4ab2-ad23-714e1dc9dbef",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9854),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Japon Yeni",
@@ -646,8 +646,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "00f7449b-8ecd-4e8d-9627-d9d15b5ef0ef",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1663),
+                            Id = "3125ecde-e75d-4e18-9f91-2923770f432d",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9857),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Norveç Kronu",
@@ -655,8 +655,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "8da367c9-7d47-453e-9aea-4132ea59e468",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1665),
+                            Id = "225f20ef-6b26-4a37-8b64-b0bea9bf9e7d",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9858),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "İsveç Kronu",
@@ -664,8 +664,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "3b2894e4-8e87-4f5d-b147-de4802edba53",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1666),
+                            Id = "4004d02c-1a22-4a38-96e7-2063b8680cd2",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9860),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Danimarka Kronu",
@@ -673,8 +673,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "16a78f8f-a41a-4f88-b82a-1c27ddcd632d",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1667),
+                            Id = "67f921c5-2437-4d8d-882c-c265e9b3113f",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9861),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Euro / Dolar",
@@ -682,8 +682,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "2bed14fc-3b1f-4273-93db-66ef1926285a",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1669),
+                            Id = "c3272fac-35df-44ca-a82c-d196a69e73f8",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9862),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Sterlin / Dolar",
@@ -691,8 +691,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "10e6bcf8-3a7b-4f5b-af5e-ad211ec6cd76",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1671),
+                            Id = "5d2b1650-0bb8-4fb6-8b59-bf1871673da0",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9864),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Dolar / İsviçre Frangı",
@@ -700,8 +700,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "cbc29219-31a3-4eb4-8bb1-93b4edf712e8",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1673),
+                            Id = "717cd3f3-8b55-4a00-b289-0be08a566c5d",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9866),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Dolar / Kanada Doları",
@@ -709,8 +709,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "823d655e-fbda-491d-976b-0b6a13cb067b",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1674),
+                            Id = "623b86e4-1d6f-4dce-b869-b72e33e6aa68",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9867),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Avustralya Doları / Dolar",
@@ -718,8 +718,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "c8fc9766-b5fb-47df-b843-6744c16e17f9",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1676),
+                            Id = "5aa2d292-6a74-4d5f-a83d-ebdf4423ae18",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9870),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Dolar / Suudi Riyali",
@@ -727,8 +727,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "11b6d75c-3674-4c65-94ad-7922c96ae14d",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1677),
+                            Id = "8364c267-612a-4c7c-bbdd-2b5b6f3390ca",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9871),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Dolar / Japon Yeni",
@@ -736,8 +736,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "c06c6522-cb9f-42b4-a764-ef9fdf699043",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1678),
+                            Id = "debc19e9-d695-46cf-a2ec-172b1bb91ab1",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9872),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Dolar / Norveç Kronu",
@@ -745,8 +745,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "325a738a-4615-4928-b859-ab840983dac0",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1680),
+                            Id = "641913e4-2b80-4745-8495-5d19f08d2ec8",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9874),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Dolar / İsveç Kronu",
@@ -754,8 +754,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "e1a5a356-bce3-4ca7-8a6e-c14217c5436d",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1681),
+                            Id = "01202936-fad4-4870-821f-8f366321b0bd",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9875),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Dolar / Danimarka Kronu",
@@ -763,8 +763,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "9a4b3c6f-337f-4eac-af96-77d8e3197c78",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1683),
+                            Id = "bf58491c-7e75-4968-8b3c-928b402227a4",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9876),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Dolar / Ruble",
@@ -772,8 +772,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "22976675-9b34-4da1-b6d2-36944d48959b",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1685),
+                            Id = "ef2186fa-6f01-4639-8273-a0ae55de9cc5",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9878),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Euro / Sterlin",
@@ -781,8 +781,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "2e808d1a-739b-4ab2-935a-e0ac90d6b9dd",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1686),
+                            Id = "e7604fd0-7816-4f87-a731-963c0615d84f",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9879),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Euro / İsviçre Frangı",
@@ -790,8 +790,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "e1335f8a-b0fe-4a6c-88a2-bcc9d51e7aff",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1688),
+                            Id = "af738b01-ca11-4009-b93f-3564c9340836",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9882),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Yeni Çeyrek",
@@ -799,8 +799,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "b179e732-d905-42b8-a205-5c3763ef50db",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1689),
+                            Id = "7f496dde-b25a-4508-adc4-9f6292973d7a",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9884),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Yeni Yarım",
@@ -808,8 +808,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "d94cc0f7-e20f-4447-b211-16a4132a5913",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1690),
+                            Id = "808cd07f-5a24-4c24-aca3-1b15e8f80b51",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9885),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Yeni Tam",
@@ -817,8 +817,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "2eae70fe-38c2-404a-8fbf-cba462d3229c",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1691),
+                            Id = "33675218-05b9-4bc1-814c-4cc08c48b711",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9887),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Yeni Ata",
@@ -826,8 +826,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "3b2205d4-136f-44df-ab67-458e03992a12",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1693),
+                            Id = "02eb4017-3fd4-4644-8f78-a4f321c4119d",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9888),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Yeni 5'li Ata",
@@ -835,8 +835,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "c572c701-20db-45c0-b458-01e16da31367",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1695),
+                            Id = "517e4d53-cb1c-48f5-bba5-1200324ef03a",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9924),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Yeni Gremse",
@@ -844,8 +844,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "66c06760-5181-484b-a367-7df1e9771687",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1697),
+                            Id = "4e2e67fe-6e94-4c84-b775-771fcc1d111a",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9926),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Eski Çeyrek",
@@ -853,8 +853,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "4c860597-0e53-4457-8826-2b2fad25c936",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1698),
+                            Id = "bdc2c238-8153-4c17-bf6c-f90925a150b6",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9927),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Eski Yarım",
@@ -862,8 +862,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "2c684980-38ff-4e1f-955a-ad0275a1cbac",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1700),
+                            Id = "814cd0ec-13a6-468e-ac3f-713df44cb5de",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9930),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Eski Tam",
@@ -871,8 +871,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "6a746106-91a8-44d1-84fa-d8921cb76528",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1701),
+                            Id = "f394cd42-b01b-4d39-8cba-0bb4dab9e631",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9932),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Eski Ata",
@@ -880,8 +880,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "8f6bf035-6a17-43b7-a340-d5df70f26d3d",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1718),
+                            Id = "3be2b0ab-9286-4964-ad3c-26dcfbc568de",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9934),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Eski 5'li Ata",
@@ -889,8 +889,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "c8474156-3150-4495-9609-5f91ee2a3b9d",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1719),
+                            Id = "8e4ddfb4-f7a0-486b-ab0e-86dfbb364dc1",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9935),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Eski Gremse",
@@ -898,8 +898,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "2ff6dc29-d761-401c-9c5c-18d6fbf25e85",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1720),
+                            Id = "4fe0d247-ed99-40f7-af20-02f8ef1619ec",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9937),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Parite USD",
@@ -907,8 +907,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "8865bc40-bfaf-4636-908e-6d81e40497cc",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1723),
+                            Id = "67c67d3d-0bb4-419f-b6a1-87f371764f18",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9938),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Parite Euro",
@@ -916,8 +916,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "01493a1d-8055-49d9-b111-2265184f0cee",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1724),
+                            Id = "49ca8bac-baf9-4a8e-897e-f3f60ae29932",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9940),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Parite Sterlin",
@@ -925,8 +925,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "69755cbc-3e44-4381-abd6-599cb79cd88c",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1726),
+                            Id = "cdb22797-3de9-4c7c-8f74-3c81466cfa0f",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9941),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Parite İsviçre Frangı",
@@ -934,8 +934,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "12f0055e-7d53-4c06-bcd9-7537c27e2f01",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1727),
+                            Id = "2b178efe-4ac1-4264-9153-94c5f6eeef39",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9944),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Ons Altın (Sanal)",
@@ -943,8 +943,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "afd9a69c-04d8-493d-b5ec-b566f5161f0e",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1728),
+                            Id = "2871d6ae-8482-4950-a9d3-18450f37a820",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9945),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Euro / Dolar (Sanal)",
@@ -952,8 +952,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "9a82393d-bc1c-4aba-82b1-f55508844654",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1730),
+                            Id = "2101012e-75ba-476a-9002-40ac5d0b1fb8",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9947),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Kilo Gümüş (USD)",
@@ -961,8 +961,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "5abe5f2c-0873-439a-ad98-b68a840709dc",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1731),
+                            Id = "11fbc2e8-d736-44f6-aabe-80a9f9941322",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9948),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Dolar / TL (Spot)",
@@ -970,8 +970,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "bdfbf44a-1b84-4377-96dd-9e9f44d67e48",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1732),
+                            Id = "3d017688-623b-4b8b-a4ce-7e7418b61f71",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9950),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Fark Euro",
@@ -979,8 +979,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "91dbfca4-1d9e-4c0b-b308-1ff6103f9311",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1735),
+                            Id = "ca723eaa-9cd8-4174-a92f-93fa6daee14d",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9951),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Fark Altın",
@@ -988,8 +988,8 @@ namespace SarfiyumAPI.Data.Migrations
                         },
                         new
                         {
-                            Id = "d30575f2-7403-47d1-b6ea-f75eaa700660",
-                            CreatedAt = new DateTime(2026, 4, 13, 11, 36, 45, 72, DateTimeKind.Utc).AddTicks(1736),
+                            Id = "f70eb974-c6e7-482b-91c8-caa5a4b6ee25",
+                            CreatedAt = new DateTime(2026, 8, 15, 2, 15, 45, 362, DateTimeKind.Utc).AddTicks(9953),
                             CreatedByName = "",
                             IsDeleted = false,
                             Name = "Vade Farkı",
@@ -1021,6 +1021,9 @@ namespace SarfiyumAPI.Data.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsPublicFeedEnabled")
+                        .HasColumnType("bit");
+
                     b.Property<string>("LogoUrl")
                         .HasColumnType("nvarchar(max)");
 
@@ -1042,6 +1045,10 @@ namespace SarfiyumAPI.Data.Migrations
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PublicSlug")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<DateTime?>("RemovedAt")
                         .HasColumnType("datetime2");

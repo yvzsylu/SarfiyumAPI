@@ -315,10 +315,24 @@ namespace SarfiyumAPI.Service.Services
             // Cache kontrolü
             if (!_cache.TryGetValue(cacheKey, out List<string> tenantIds))
             {
-                // DB'den çek
+                // Abonelik kontrolü BURADA da yapılır.
+                //
+                // Eskiden yalnızca IsActive'e bakılıyordu; abonelik kontrolü SADECE login'deydi.
+                // Yani aboneliği biten bir tenant yeni giriş yapamıyor ama halihazırda açık olan
+                // ekranları (mağaza TV'si, uygulaması açık kalan viewer'lar) fiyat almaya devam
+                // ediyordu. Girişsiz public yayın açıldığında bu doğrudan bir gelir kaçağına
+                // dönüşürdü — orada login diye bir fren hiç yok.
+                //
+                // Karşılaştırma login'dekiyle birebir aynı (AuthService.LoginAsync):
+                // SubscriptionEndDate yoksa ya da geçmişse tenant yayına dahil edilmez.
+                var now = DateTime.UtcNow;
+
                 // Not: Tenant.Id tipin int ise ToString() ile dönüştürüyoruz çünkü SignalR group string ister.
                 tenantIds = await _tenantRepository
-                    .Where(t => t.IsActive && !t.IsDeleted)
+                    .Where(t => t.IsActive
+                                && !t.IsDeleted
+                                && t.SubscriptionEndDate.HasValue
+                                && t.SubscriptionEndDate.Value >= now)
                     .Select(t => t.Id.ToString())
                     .ToListAsync();
 
@@ -333,9 +347,106 @@ namespace SarfiyumAPI.Service.Services
             return tenantIds;
         }
 
+        /// <inheritdoc />
+        public async Task<List<string>> GetPublicFeedTenantIdsAsync()
+        {
+            const string cacheKey = "Public_Feed_Tenant_List_Cached";
+
+            if (!_cache.TryGetValue(cacheKey, out List<string> tenantIds))
+            {
+                var now = DateTime.UtcNow;
+
+                // Abonelik filtresi GetActiveTenantIdsAsync ile birebir aynı: aboneliği biten
+                // tenant'ın girişsiz yayını da durur. Public'te login diye bir fren olmadığı
+                // için burası tek kontrol noktasıdır.
+                tenantIds = await _tenantRepository
+                    .Where(t => t.IsActive
+                                && !t.IsDeleted
+                                && t.IsPublicFeedEnabled
+                                && t.SubscriptionEndDate.HasValue
+                                && t.SubscriptionEndDate.Value >= now)
+                    .Select(t => t.Id.ToString())
+                    .ToListAsync();
+
+                _cache.Set(cacheKey, tenantIds, new MemoryCacheEntryOptions()
+                    .SetAbsoluteExpiration(TimeSpan.FromMinutes(10))
+                    .SetPriority(CacheItemPriority.High));
+            }
+
+            return tenantIds;
+        }
+
+        /// <inheritdoc />
+        public async Task<string?> ResolvePublicTenantIdAsync(string slug)
+        {
+            if (string.IsNullOrWhiteSpace(slug)) return null;
+
+            var normalized = slug.Trim().ToLowerInvariant();
+            var cacheKey = $"Public_Slug_{normalized}";
+
+            if (_cache.TryGetValue(cacheKey, out string? cached))
+            {
+                return string.IsNullOrEmpty(cached) ? null : cached;
+            }
+
+            var now = DateTime.UtcNow;
+
+            var tenantId = await _tenantRepository
+                .Where(t => t.PublicSlug != null
+                            && t.PublicSlug.ToLower() == normalized
+                            && t.IsActive
+                            && !t.IsDeleted
+                            && t.IsPublicFeedEnabled
+                            && t.SubscriptionEndDate.HasValue
+                            && t.SubscriptionEndDate.Value >= now)
+                .Select(t => t.Id)
+                .FirstOrDefaultAsync();
+
+            // Bulunamayan slug da önbelleğe alınır (boş string ile): anonim uç nokta olduğu
+            // için geçersiz slug denemeleri her seferinde DB'ye inmemeli. Süre kısa tutuluyor
+            // ki abonelik/bayrak değişimi makul sürede yansısın.
+            _cache.Set(cacheKey, tenantId ?? string.Empty, new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromMinutes(
+                    string.IsNullOrEmpty(tenantId) ? 1 : 5)));
+
+            return string.IsNullOrEmpty(tenantId) ? null : tenantId;
+        }
+
+        /// <inheritdoc />
+        public async Task<PublicTenantDto?> GetPublicTenantAsync(string slug)
+        {
+            var tenantId = await ResolvePublicTenantIdAsync(slug);
+            if (tenantId == null) return null;
+
+            var tenant = await _tenantRepository
+                .Where(t => t.Id == tenantId)
+                .Select(t => new { t.Name, t.LogoUrl })
+                .FirstOrDefaultAsync();
+
+            if (tenant == null) return null;
+
+            var categories = await _categoryRepository
+                .Where(c => c.TenantId == tenantId && c.IsActive)
+                .OrderBy(c => c.OrderIndex)
+                .Select(c => new PublicCategoryDto { Name = c.Name, OrderIndex = c.OrderIndex })
+                .ToListAsync();
+
+            return new PublicTenantDto
+            {
+                Name = tenant.Name,
+                LogoUrl = tenant.LogoUrl,
+                Categories = categories
+            };
+        }
+
         public void ClearTenantCache()
         {
             _cache.Remove("Active_Tenant_List_Cached");
+
+            // Public yayın listesi de aynı kaynağa (Tenant tablosu + abonelik) bağlı.
+            // Birini temizleyip diğerini bırakmak, aboneliği yenilenen bir tenant'ın
+            // normal yayına dönüp public yayına dönmemesi gibi tutarsızlık yaratırdı.
+            _cache.Remove("Public_Feed_Tenant_List_Cached");
         }
 
 

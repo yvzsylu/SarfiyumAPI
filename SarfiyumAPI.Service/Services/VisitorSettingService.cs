@@ -12,16 +12,18 @@ namespace SarfiyumAPI.Service.Services
         private readonly IRepository<VisitorProductSetting> _settingRepo;
         private readonly IDataContext _context; // SaveChanges için
         private readonly IMemoryCache _cache;
+        private readonly IViewerPricingNotifier _pricingNotifier;
 
         public VisitorSettingService(
             IRepository<VisitorProductSetting> settingRepo,
-            IRepository<UserActiveSession> sessionRepo,
             IDataContext context,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            IViewerPricingNotifier pricingNotifier)
         {
             _settingRepo = settingRepo;
             _context = context;
             _cache = cache;
+            _pricingNotifier = pricingNotifier;
         }
 
         // ========================================================================
@@ -36,35 +38,35 @@ namespace SarfiyumAPI.Service.Services
         }
 
 
-        public async Task<List<VisitorSessionDto>> GetOnlineVisitorsWithSettingsAsync(string tenantId)
+        public async Task<List<VisitorSessionDto>> GetVisitorsWithSpecialSettingsAsync(string tenantId)
         {
-            // 1. ADIM: CACHE KONTROLÜ
-            // Online durumu değişken olduğu için cache süresini 30 saniye-1 dakika arası tutmak en sağlıklısıdır.
-            string cacheKey = $"OnlineVisitorSettings_{tenantId}";
+            string cacheKey = $"VisitorSpecialSettings_{tenantId}";
 
             if (_cache.TryGetValue(cacheKey, out List<VisitorSessionDto> cachedResult))
             {
                 return cachedResult;
             }
 
-            // 2. ADIM: AKILLI FİLTRELEME
-            // Sadece bu Tenant'a ait, IsActive olan VE şu an UserActiveSessions tablosunda kaydı olanları çekiyoruz.
+            // Tenant'ın özel fiyat tanımlı tüm viewer'ları.
+            //
+            // NOT: Burada eskiden "sadece UserActiveSessions tablosunda kaydı olanları getir"
+            // şeklinde bir online filtresi vardı. İki nedenle kaldırıldı:
+            //  1) Sistemde logout endpoint'i olmadığı için UserActiveSession satırı hiç
+            //     silinmiyordu; yani filtre pratikte hiçbir şeyi elemiyordu.
+            //  2) Filtre yüzünden cache 30 saniyeye sıkışmıştı. Bu da ilk kez giriş yapan
+            //     özel ayarlı bir viewer'ın 30 saniyeye kadar HİÇ fiyat görmemesine yol
+            //     açıyordu (bkz. AGENTS.md M2).
+            //
+            // Sonuç listesi yalnızca VisitorProductSetting satırlarına bağlı; bu satırlar da
+            // sadece Upsert/Delete ile değişiyor ve her ikisi de ClearCache çağırıyor.
+            // Bu yüzden uzun süreli cache güvenli.
+            //
+            // Gerçekten bağlı olan viewer'ları hedefleme optimizasyonu ayrı bir adımda
+            // (IHubConnectionRegistry üzerinden) ele alınacak.
             var settings = await _settingRepo
                 .Where(x => x.TenantId == tenantId && x.IsActive)
-                // 🔥 KRİTİK DOKUNUŞ: Sadece gerçekten online olanların ayarlarını getir
-                .Where(x => _context.Set<UserActiveSession>().Any(s => s.UserId == x.VisitorId))
                 .ToListAsync();
 
-            // Eğer online olup da özel ayarı olan kimse yoksa:
-            if (!settings.Any())
-            {
-                var emptyList = new List<VisitorSessionDto>();
-                // Boş listeyi 30 saniye cache'le ki her saniye DB'ye gitmesin
-                _cache.Set(cacheKey, emptyList, TimeSpan.FromSeconds(30));
-                return emptyList;
-            }
-
-            // 3. ADIM: GRUPLAMA
             var result = settings
                 .GroupBy(x => x.VisitorId)
                 .Select(g => new VisitorSessionDto
@@ -74,63 +76,14 @@ namespace SarfiyumAPI.Service.Services
                 })
                 .ToList();
 
-            // 4. ADIM: KISA SÜRELİ CACHE (30 Saniye)
-            // Online listesi 1 saat cache'lenemez çünkü kullanıcı girip çıkabilir. 
-            // 30 saniye performans için yeterlidir.
-            _cache.Set(cacheKey, result, TimeSpan.FromSeconds(30));
+            var cacheOptions = new MemoryCacheEntryOptions()
+                .SetAbsoluteExpiration(TimeSpan.FromHours(1))
+                .SetPriority(CacheItemPriority.High);
+
+            _cache.Set(cacheKey, result, cacheOptions);
 
             return result;
         }
-        //public async Task<List<VisitorSessionDto>> GetOnlineVisitorsWithSettingsAsync(string tenantId)
-        //{
-        //    // 🔥 1. ADIM: UZUN SÜRELİ CACHE KONTROLÜ
-        //    string cacheKey = $"OnlineVisitorSettings_{tenantId}";
-
-        //    if (_cache.TryGetValue(cacheKey, out List<VisitorSessionDto> cachedResult))
-        //    {
-        //        return cachedResult;
-        //    }
-
-        //    // --- BURADAN AŞAĞISI SADECE AYAR DEĞİŞTİĞİNDE ÇALIŞIR ---
-
-        //    // 2. ADIM: ONLINE SORGUSUNU İPTAL ETTİK!
-        //    // SignalR offline gruba atılan veriyi sessizce çöpe atar. SQL'i yormaya gerek yok.
-
-        //    // 3. ADIM: SADECE TENANT'A AİT AKTİF ÖZEL AYARLARI ÇEK
-        //    var settings = await _settingRepo
-        //        .Where(x => x.TenantId == tenantId && x.IsActive)
-        //        .ToListAsync();
-
-        //    // Eğer firmanın hiçbir müşterisine tanımlı özel ayarı yoksa:
-        //    if (!settings.Any())
-        //    {
-        //        var emptyList = new List<VisitorSessionDto>();
-
-        //        // Cache süresini 5 saniyeden 1 SAATE çıkardık!
-        //        // Zaten sen Upsert/Delete metodlarında ClearCache yaptığın için veri anında güncellenir.
-        //        _cache.Set(cacheKey, emptyList, TimeSpan.FromHours(1));
-
-        //        return emptyList;
-        //    }
-
-        //    // 4. ADIM: GRUPLAMA VE DTO ÇEVİRİMİ
-        //    var result = settings
-        //        .GroupBy(x => x.VisitorId)
-        //        .Select(g => new VisitorSessionDto
-        //        {
-        //            VisitorId = g.Key,
-        //            Settings = g.ToList()
-        //        })
-        //        .ToList();
-
-        //    // 5. ADIM: SONUCU UZUN SÜRELİ CACHE'LE (1 SAAT)
-        //    var cacheOptions = new MemoryCacheEntryOptions()
-        //        .SetAbsoluteExpiration(TimeSpan.FromHours(1));
-
-        //    _cache.Set(cacheKey, result, cacheOptions);
-
-        //    return result;
-        //}
 
         // ========================================================================
         // 2. CRUD METHODS (CONTROLLER)
@@ -198,6 +151,10 @@ namespace SarfiyumAPI.Service.Services
             await _context.SaveChangesAsync();
             ClearCache(tenantId); // Cache'i temizle ki fiyatlar hemen yansısın
 
+            // 🔥 Viewer o an bağlıysa standart yayın grubundan çıkar.
+            // Aksi halde hem standart hem özel listeyi alıp ekranı titrerdi (AGENTS.md M1).
+            await _pricingNotifier.MoveToSpecialAsync(tenantId, model.VisitorId);
+
             return ServiceResult<string>.Success("Özel fiyat ayarı kaydedildi.", 200);
         }
 
@@ -214,6 +171,13 @@ namespace SarfiyumAPI.Service.Services
             await _context.SaveChangesAsync();
             ClearCache(tenantId);
 
+            // 🔥 Bu viewer'ın başka özel ayarı kalmadıysa standart yayın grubuna geri al.
+            // Aksi halde hiçbir gruba ait olmadığı için HİÇ fiyat almazdı (AGENTS.md M1).
+            if (!await HasSpecialSettingsAsync(visitorId))
+            {
+                await _pricingNotifier.MoveToStandardAsync(tenantId, visitorId);
+            }
+
             return ServiceResult<string>.Success("Özel fiyat ayarı kaldırıldı.", 200);
         }
 
@@ -229,7 +193,7 @@ namespace SarfiyumAPI.Service.Services
 
         public void ClearCache(string tenantId)
         {
-            _cache.Remove($"OnlineVisitorSettings_{tenantId}");
+            _cache.Remove($"VisitorSpecialSettings_{tenantId}");
         }
     }
 }

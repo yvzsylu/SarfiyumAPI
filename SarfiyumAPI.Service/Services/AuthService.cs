@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SarfiyumAPI.Core.DTOs;
 using SarfiyumAPI.Core.Entities;
+using SarfiyumAPI.Core.Enums;
 using SarfiyumAPI.Core.Interfaces;
 using SarfiyumAPI.Core.ValueObjects;
 using SarfiyumAPI.Core.Wrapper;
@@ -31,6 +32,7 @@ namespace SarfiyumAPI.Service.Services
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IRepository<UserActiveSession> _activeSessionRepo;
         private readonly ISessionNotificationService _sessionNotificationService;
+        private readonly IActiveSessionCache _activeSessionCache;
 
         public AuthService(
             UserManager<AppUser> userManager,
@@ -42,8 +44,10 @@ namespace SarfiyumAPI.Service.Services
             IRepository<UserLoginHistory> loginHistoryRepo,
             IHttpContextAccessor httpContextAccessor,
             IRepository<UserActiveSession> activeSessionRepo,
-            ISessionNotificationService sessionNotificationService)
+            ISessionNotificationService sessionNotificationService,
+            IActiveSessionCache activeSessionCache)
         {
+            _activeSessionCache = activeSessionCache;
             _userManager = userManager;
             _roleManager = roleManager;
             _configuration = configuration;
@@ -109,6 +113,11 @@ namespace SarfiyumAPI.Service.Services
                 }
                 await _context.SaveChangesAsync();
 
+                // Oturum önbelleğini YENİ SessionId ile güncelle. Böylece eski cihazın
+                // bir sonraki isteği DB'ye gitmeden, anında uyuşmazlığa düşüp 401 alır
+                // (tek cihaz kuralı korunur — AGENTS.md P5).
+                _activeSessionCache.Set(user.Id, model.ClientSource, newSessionId);
+
 
                 // =================================================================
                 // 2. CLAIM OLUŞTURMA
@@ -173,6 +182,37 @@ namespace SarfiyumAPI.Service.Services
                 return ServiceResult<string>.Success(tokenString, 200);
             }
             return ServiceResult<string>.Fail("Kullanıcı adı veya şifre hatalı!", 401);
+        }
+
+        /// <inheritdoc />
+        public async Task<ServiceResult<string>> LogoutAsync(string userId, ClientSource clientSource, string sessionId, string? tenantId)
+        {
+            if (string.IsNullOrEmpty(userId))
+                return ServiceResult<string>.Fail("Oturum bilgisi okunamadı.", 401);
+
+            var session = await _activeSessionRepo
+                .Where(x => x.UserId == userId && x.ClientSource == clientSource)
+                .FirstOrDefaultAsync();
+
+            // Satır yoksa kullanıcı zaten çıkmış demektir. Satır varsa ama SessionId
+            // uyuşmuyorsa, aradan YENİ bir giriş yapılmış demektir; eski token'ın o
+            // oturumu kapatmasına izin verilmez. Her iki durumda da akış "başarılı"dır:
+            // istemci token'ını silip çıkabilir.
+            if (session != null && session.SessionId == sessionId)
+            {
+                _activeSessionRepo.Remove(session);
+                await _context.SaveChangesAsync();
+
+                _activeSessionCache.Remove(userId, clientSource);
+
+                // Açık kalan hub bağlantılarının fiyat almaya devam etmesini engelle.
+                // ForceCheckSession istemcinin kendini atmasını sağlar; grup çıkarma ise
+                // istemci sinyali yok saysa bile akışı sunucuda keser (AGENTS.md G10).
+                await _sessionNotificationService.SendForceCheckSession(userId, string.Empty, clientSource.ToString());
+                await _sessionNotificationService.DetachFromBroadcastsAsync(userId, tenantId ?? string.Empty);
+            }
+
+            return ServiceResult<string>.Success("Çıkış yapıldı.", 200);
         }
 
         private JwtSecurityToken GetToken(List<Claim> authClaims, DateTime expires)

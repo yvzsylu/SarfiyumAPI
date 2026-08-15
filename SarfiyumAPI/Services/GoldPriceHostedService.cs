@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
 using SarfiyumAPI.Core.DTOs;
+using SarfiyumAPI.Core.Enums;
 using SarfiyumAPI.Core.Interfaces;
 using SarfiyumAPI.Hubs;
 using SocketIOClient;
@@ -12,28 +13,39 @@ using System.Diagnostics;
 
 namespace SarfiyumAPI.Services
 {
-    public class GoldPriceHostedService : BackgroundService
+    /// <summary>
+    /// CANLI veri kaynağı: Datshop Socket.IO. Yayının zamanlaması ve içeriği
+    /// <see cref="PriceFeedHostedServiceBase"/> ile <see cref="IPriceBroadcaster"/> tarafından
+    /// yürütülür; bu sınıf yalnızca soketi yönetir ve gelen paketleri önbelleğe yazar.
+    /// </summary>
+    public class GoldPriceHostedService : PriceFeedHostedServiceBase
     {
-        private readonly IHubContext<GoldHub> _hubContext;
-        private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<GoldPriceHostedService> _logger;
         private SocketIOClient.SocketIO _client;
         private readonly IConfiguration _configuration;
-        private readonly ConcurrentDictionary<string, PriceData> _priceCache = new();
 
-        private readonly SemaphoreSlim _broadcastLock = new SemaphoreSlim(1, 1);
-
-        // 🔥 YENİ EKLENDİ: Son verinin geldiği zamanı tutar (Watchdog için)
+        // Son verinin geldiği zamanı tutar (Watchdog için)
         private DateTime _lastDataReceivedTime = DateTime.UtcNow;
 
+        // --- Watchdog varsayılanları (AGENTS.md P10) ---
+        // Eski davranış: 15 saniye veri gelmezse soketi zorla yeniden kur. Piyasa kapalıyken
+        // (gece/hafta sonu) Datshop veri göndermediği için bu, sonsuz reconnect döngüsüne ve
+        // log şişmesine yol açıyordu. Artık eşik daha yüksek ve ardışık sıfırlamalarda
+        // üstel geri çekilme (backoff) uygulanıyor.
+        private const int DefaultWatchdogIdleSeconds = 60;
+        private const int DefaultWatchdogMaxBackoffSeconds = 300;
+        private static readonly TimeSpan WatchdogPollInterval = TimeSpan.FromSeconds(5);
+
+        // Veri akışı kesildiğinde art arda kaç kez sıfırlama denendiğini tutar.
+        // Gerçek veri geldiği an sıfırlanır.
+        private int _consecutiveWatchdogResets;
+
         public GoldPriceHostedService(
-            IHubContext<GoldHub> hubContext,
-            IServiceProvider serviceProvider,
-            ILogger<GoldPriceHostedService> logger,
-            IConfiguration configuration)
+            IPriceBroadcaster broadcaster,
+            IConfiguration configuration,
+            ILogger<GoldPriceHostedService> logger)
+            : base(broadcaster, configuration, logger)
         {
-            _hubContext = hubContext;
-            _serviceProvider = serviceProvider;
             _logger = logger;
             _configuration = configuration;
         }
@@ -55,204 +67,159 @@ namespace SarfiyumAPI.Services
                 ReconnectionDelay = 1000
             });
 
-            _client.OnConnected += async (sender, e) => _logger.LogInformation($"✅ [SOCKET] Bağlantı Başarılı!");
+            _client.OnConnected += (sender, e) => _logger.LogInformation("✅ [SOCKET] Bağlantı Başarılı!");
 
             _client.OnDisconnected += (sender, e) => _logger.LogWarning($"[SOCKET] Bağlantı koptu. Sebep: {e}");
-            _client.OnReconnectAttempt += (sender, e) => _logger.LogInformation($"[SOCKET] Yeniden bağlanılıyor. Deneme: {e}");
+            // Yeniden bağlanma denemeleri kopukluk sürdükçe saniyede bir tetiklenebilir → Debug.
+            // Kopmanın kendisi zaten yukarıda Warning olarak bir kez loglanıyor.
+            _client.OnReconnectAttempt += (sender, e) => _logger.LogDebug($"[SOCKET] Yeniden bağlanılıyor. Deneme: {e}");
             _client.OnError += (sender, e) => _logger.LogError($"[SOCKET] Hata oluştu: {e}");
 
             _client.On("price_changed", async response =>
             {
-                // 🔥 YENİ EKLENDİ: Veri geldiği an kronometreyi sıfırla
+                // Veri geldiği an kronometreyi sıfırla; watchdog sıfırlama serisi varsa sonlandır.
                 _lastDataReceivedTime = DateTime.UtcNow;
-
-                if (!_broadcastLock.Wait(0))
+                var resetsBeforeRecovery = Interlocked.Exchange(ref _consecutiveWatchdogResets, 0);
+                if (resetsBeforeRecovery > 0)
                 {
-                    _logger.LogWarning("[OVERLAP] Önceki yayın devam ediyor, yeni paket atlandı.");
-                    return;
+                    _logger.LogInformation(
+                        $"[WATCHDOG] Veri akışı yeniden başladı ({resetsBeforeRecovery} sıfırlama denemesinden sonra).");
                 }
 
+                // AGENTS.md P1: Bu handler ARTIK YAYIN YAPMIYOR.
+                // Eskiden her `price_changed` paketi tam bir BroadcastToTenants() tetikliyordu;
+                // Datshop saniyede birkaç paket gönderdiği için tenant × ürün kadar hesap
+                // saniyede birkaç kez tekrarlanıyordu ve bu, sunucunun en büyük CPU
+                // tüketicisiydi. Artık paket yalnızca önbelleği günceller; yayını sabit
+                // aralıklı bir tick döngüsü yapar (bkz. RunBroadcastLoopAsync).
                 try
                 {
                     var incomingList = response.GetValue<List<PriceData>>();
-                    _logger.LogInformation($"[SOCKET_IN] Veri paketi alındı. İçindeki ürün sayısı: {incomingList?.Count ?? 0}");
+                    // Normal akış: pakette kaç ürün geldiği. Saniyede birkaç kez tetiklendiği için Debug.
+                    _logger.LogDebug($"[SOCKET_IN] Veri paketi alındı. İçindeki ürün sayısı: {incomingList?.Count ?? 0}");
                     if (incomingList != null && incomingList.Any())
                     {
-                        foreach (var item in incomingList)
-                        {
-                            _priceCache.AddOrUpdate(item.Symbol, item, (key, oldValue) => item);
-                        }
-                        await BroadcastToTenants();
+                        // Önbelleği güncelle ve bir sonraki tick'e iş bırak. Yayını taban
+                        // sınıftaki döngü yapar — mock ile birebir aynı yol.
+                        UpdatePrices(incomingList);
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError($"[BROADCAST_ERROR] Veri işleme hatası: {ex.Message}\nStack: {ex.StackTrace}");
                 }
-                finally
-                {
-                    _broadcastLock.Release();
-                }
+
+                await Task.CompletedTask;
             });
 
             try { await _client.ConnectAsync(); }
             catch (Exception ex) { _logger.LogError($"[SOCKET_ERROR] İlk Bağlantı Hatası: {ex.Message}"); }
 
-            // 🔥 YENİ EKLENDİ: Watchdog (Bekçi) Döngüsü
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                await Task.Delay(5000, stoppingToken);
-
-                var idleSeconds = (DateTime.UtcNow - _lastDataReceivedTime).TotalSeconds;
-
-                // Eğer 15 saniyeden uzun süredir fiyat gelmiyorsa soket sessizce düşmüş (Ghost Connection) demektir
-                if (idleSeconds > 15)
-                {
-                    _logger.LogWarning($"[WATCHDOG] {idleSeconds:F0} saniyedir Socket.IO verisi gelmiyor. Sessiz kopma tespit edildi, bağlantı sıfırlanıyor...");
-
-                    try
-                    {
-                        if (_client.Connected)
-                        {
-                            await _client.DisconnectAsync();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogDebug($"[WATCHDOG] Kapanma sırasında beklenen hata: {ex.Message}");
-                    }
-
-                    await Task.Delay(1000, stoppingToken); // Bağlantının tam düşmesi için kısa bir bekleme
-
-                    try
-                    {
-                        await _client.ConnectAsync();
-                        _lastDataReceivedTime = DateTime.UtcNow; // Kronometreyi sıfırla ki ard üste tetiklenmesin
-                        _logger.LogInformation("[WATCHDOG] Socket.IO bağlantısı zorla yenilendi.");
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError($"[WATCHDOG] Yeniden bağlanma başarısız: {ex.Message}");
-                    }
-                }
-            }
+            // İki bağımsız döngü: biri sabit aralıkla yayın yapar, diğeri soketi gözler.
+            // Ayrı tutuluyorlar çünkü periyotları farklı ve biri diğerini bekletmemeli.
+            await Task.WhenAll(
+                RunBroadcastLoopAsync(stoppingToken),
+                RunWatchdogLoopAsync(stoppingToken));
 
             if (_client.Connected) await _client.DisconnectAsync();
         }
 
-        private async Task BroadcastToTenants()
+        /// <summary>
+        /// Watchdog (Bekçi) döngüsü.
+        /// Soket "bağlı" görünüp veri akmadığı durumu (ghost connection) yakalar.
+        /// Piyasa kapalıyken de veri akmadığı için, ardışık sıfırlamalarda üstel geri
+        /// çekilme uygulanır; aksi halde gece boyunca dakikada birkaç kez reconnect
+        /// denenir ve hem log hem karşı tarafta rate-limit riski doğar (AGENTS.md P10).
+        /// </summary>
+        private async Task RunWatchdogLoopAsync(CancellationToken stoppingToken)
         {
-            var sw = Stopwatch.StartNew();
-            int broadcastCount = 0;
+            var idleThreshold = TimeSpan.FromSeconds(
+                _configuration.GetValue<int?>("SocketServer:WatchdogIdleSeconds") ?? DefaultWatchdogIdleSeconds);
+            var maxBackoff = TimeSpan.FromSeconds(
+                _configuration.GetValue<int?>("SocketServer:WatchdogMaxBackoffSeconds") ?? DefaultWatchdogMaxBackoffSeconds);
 
-            try
+            var nextResetAllowedAt = DateTime.MinValue;
+
+            while (!stoppingToken.IsCancellationRequested)
             {
-                using (var scope = _serviceProvider.CreateScope())
+                try
                 {
-                    var settingsService = scope.ServiceProvider.GetRequiredService<IMultiplierSettingsService>();
-                    var tenantService = scope.ServiceProvider.GetRequiredService<ITenantService>();
-                    var visitorService = scope.ServiceProvider.GetRequiredService<IVisitorSettingService>();
+                    await Task.Delay(WatchdogPollInterval, stoppingToken);
+                }
+                catch (OperationCanceledException) { break; }
 
-                    var activeTenantIds = await tenantService.GetActiveTenantIdsAsync();
-                    if (activeTenantIds == null || !activeTenantIds.Any()) return;
+                var now = DateTime.UtcNow;
 
-                    var latestMarketData = _priceCache.Values.ToDictionary(x => x.Symbol, x => x);
+                // Geri çekilme süresi dolmadıysa hiç bakma.
+                if (now < nextResetAllowedAt) continue;
 
-                    var broadcastTasks = new List<Task>();
+                var idle = now - _lastDataReceivedTime;
+                if (idle < idleThreshold) continue;
 
-                    foreach (var tenantId in activeTenantIds)
+                var resetAttempt = Interlocked.Increment(ref _consecutiveWatchdogResets);
+
+                // İlk sıfırlama gerçek bir anomali sinyalidir → Warning.
+                // Ardışık sıfırlamalar büyük olasılıkla piyasanın kapalı olmasından
+                // kaynaklanır; her birini Warning'e yazmak diski doldurur → Debug.
+                if (resetAttempt == 1)
+                {
+                    _logger.LogWarning(
+                        $"[WATCHDOG] {idle.TotalSeconds:F0} saniyedir Socket.IO verisi gelmiyor. Bağlantı sıfırlanıyor...");
+                }
+                else
+                {
+                    _logger.LogDebug(
+                        $"[WATCHDOG] Veri akışı hâlâ yok ({idle.TotalSeconds:F0} sn). Sıfırlama denemesi: {resetAttempt}.");
+                }
+
+                try
+                {
+                    if (_client.Connected)
                     {
-                        var myProducts = await settingsService.GetProductsAsync(tenantId);
-                        if (myProducts == null || !myProducts.Any()) continue;
-
-                        var standardList = CalculatePriceList(myProducts, latestMarketData, null);
-                        if (standardList.Any())
-                        {
-                            broadcastTasks.Add(_hubContext.Clients.Group($"{tenantId}_Standard").SendAsync("ReceivePrices", standardList));
-                            broadcastCount++;
-                        }
-
-                        var specialVisitors = await visitorService.GetOnlineVisitorsWithSettingsAsync(tenantId);
-                        foreach (var visitorSession in specialVisitors)
-                        {
-                            var specialList = CalculatePriceList(myProducts, latestMarketData, visitorSession.Settings);
-                            broadcastTasks.Add(_hubContext.Clients.Group(visitorSession.VisitorId).SendAsync("ReceivePrices", specialList));
-                            broadcastCount++;
-                        }
-                    }
-
-                    if (broadcastTasks.Any())
-                    {
-                        await Task.WhenAll(broadcastTasks);
+                        await _client.DisconnectAsync();
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"[BROADCAST_DB_ERROR] Veritabanı veya gönderim aşamasında hata: {ex.Message}");
-            }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug($"[WATCHDOG] Kapanma sırasında beklenen hata: {ex.Message}");
+                }
 
-            sw.Stop();
-            if (sw.ElapsedMilliseconds > 1000)
-            {
-                _logger.LogWarning($"[PERF] Broadcast geç tamamlandı: {sw.ElapsedMilliseconds}ms. Gönderim sayısı: {broadcastCount}");
-            }
-            else
-            {
-                _logger.LogInformation($"[PERF] Broadcast tamamlandı: {sw.ElapsedMilliseconds}ms. Gönderim sayısı: {broadcastCount}");
+                await Task.Delay(1000, stoppingToken); // Bağlantının tam düşmesi için kısa bir bekleme
+
+                try
+                {
+                    await _client.ConnectAsync();
+                    _logger.LogDebug("[WATCHDOG] Socket.IO bağlantısı zorla yenilendi.");
+                }
+                catch (Exception ex)
+                {
+                    // Bağlantı kurulamadıysa da geri çekilme uygulanır; aksi halde
+                    // sunucu erişilemezken 5 saniyede bir hata logu üretilir.
+                    _logger.LogError($"[WATCHDOG] Yeniden bağlanma başarısız: {ex.Message}");
+                }
+
+                // Kronometreyi sıfırla ki eşik yeniden baştan işlesin.
+                _lastDataReceivedTime = DateTime.UtcNow;
+                nextResetAllowedAt = DateTime.UtcNow + ComputeWatchdogBackoff(resetAttempt, idleThreshold, maxBackoff);
             }
         }
 
-        private List<PriceData> CalculatePriceList(
-            List<TenantProduct> products,
-            Dictionary<string, PriceData> marketData,
-            List<VisitorProductSetting>? specialSettings)
+        /// <summary>
+        /// Ardışık sıfırlama sayısına göre üstel geri çekilme süresi üretir:
+        /// eşik × 2^(deneme-1), üst sınır <paramref name="maxBackoff"/>.
+        /// (60 sn eşik için: 60 → 120 → 240 → 300 → 300 ...)
+        /// </summary>
+        private static TimeSpan ComputeWatchdogBackoff(int resetAttempt, TimeSpan idleThreshold, TimeSpan maxBackoff)
         {
-            var list = new List<PriceData>();
+            // Üs alma taşmasını önlemek için deneme sayısı sınırlanır.
+            var exponent = Math.Min(resetAttempt - 1, 16);
+            var seconds = idleThreshold.TotalSeconds * Math.Pow(2, exponent);
 
-            foreach (var product in products)
-            {
-                if (marketData.TryGetValue(product.SourceKey, out var sourceData))
-                {
-                    decimal buyMult = product.BuyMultiplier;
-                    decimal sellMult = product.SellMultiplier;
-                    decimal addon = product.AddonAmount;
-
-                    if (specialSettings != null)
-                    {
-                        var setting = specialSettings.FirstOrDefault(s => s.TenantProductId == product.Id);
-                        if (setting != null)
-                        {
-                            if (setting.SpecialBuyMultiplier.HasValue) buyMult = setting.SpecialBuyMultiplier.Value;
-                            if (setting.SpecialSellMultiplier.HasValue) sellMult = setting.SpecialSellMultiplier.Value;
-                            if (setting.SpecialAddonAmount.HasValue) addon = setting.SpecialAddonAmount.Value;
-                        }
-                    }
-
-                    decimal finalBid = 0;
-                    decimal finalAsk = 0;
-
-                    if (sourceData.Bid.HasValue)
-                        finalBid = (sourceData.Bid.Value * buyMult) - addon;
-
-                    if (sourceData.Ask.HasValue)
-                        finalAsk = (sourceData.Ask.Value * sellMult) + addon;
-
-                    list.Add(new PriceData
-                    {
-                        Symbol = product.Name,
-                        Category = product.TenantProductCategory?.Name ?? "Genel",
-                        CategoryIndex = product.TenantProductCategory?.OrderIndex ?? 0,
-                        Description = product.Name,
-                        Source = "Sarfiyum",
-                        Timestamp = sourceData.Timestamp,
-                        Bid = finalBid > 0 ? finalBid : null,
-                        Ask = finalAsk > 0 ? finalAsk : null,
-                        OrderIndex = product.OrderIndex
-                    });
-                }
-            }
-            return list;
+            return seconds >= maxBackoff.TotalSeconds
+                ? maxBackoff
+                : TimeSpan.FromSeconds(seconds);
         }
+
+
     }
 }

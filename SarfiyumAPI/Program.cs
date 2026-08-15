@@ -83,13 +83,42 @@ builder.Services.AddScoped<IViewerAccountService, ViewerAccountService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ISessionNotificationService, SarfiyumAPI.Services.SignalRSessionService>();
 
+// Oturum doğrulamasını her istekte DB'ye gitmekten kurtaran önbellek (AGENTS.md P5/P6).
+// Scoped: içinde scoped bir repository kullanıyor; önbelleğin kendisi singleton IMemoryCache.
+builder.Services.AddScoped<IActiveSessionCache, ActiveSessionCache>();
+
+// Hangi kullanıcının hangi SignalR bağlantılarına sahip olduğunu tutar.
+// Singleton olmak ZORUNDA: tüm bağlantılar için tek bir kayıt defteri.
+builder.Services.AddSingleton<SarfiyumAPI.Services.IHubConnectionRegistry, SarfiyumAPI.Services.HubConnectionRegistry>();
+
+// Özel fiyat ayarı değişince viewer'ın yayın grubunu canlı olarak güncelleyen servis.
+builder.Services.AddScoped<IViewerPricingNotifier, SarfiyumAPI.Services.ViewerPricingNotifier>();
+
+// Fiyat hesabının TEK kaynağı. Singleton: durumsuz (yalnızca uyarı throttle'ı tutuyor),
+// hem hosted service hem de ileride başka çağıranlar aynı kuralla çalışmalı.
+builder.Services.AddSingleton<IPriceCalculator, PriceCalculator>();
+
+// Yayın grubu başına "en son ne gönderildi" durumu. Snapshot/delta kararını verir.
+// Singleton olmak ZORUNDA: durum yayın turları arasında yaşamalı.
+builder.Services.AddSingleton<IPriceFeedStateTracker, PriceFeedStateTracker>();
+
+// Bir yayın turunu baştan sona yürüten TEK yer. Hem canlı hem mock veri kaynağı
+// buradan geçer; böylece lokalde test edilen davranış canlıdakiyle aynıdır.
+builder.Services.AddSingleton<IPriceBroadcaster, SarfiyumAPI.Services.PriceBroadcaster>();
+
 // Önce eski kaydı silin: builder.Services.AddHostedService<GoldPriceHostedService>();
 
 // Yerine bu yapıyı kurun:
 if (builder.Environment.IsDevelopment())
 {
-    // Lokal geliştirme sırasında (localhost) sahte veriler akacak
+    // Lokal geliştirme sırasında (localhost) sahte veriler akacak.
+    // Datshop yalnızca canlı sunucunun IP'sini whitelist'e aldığı için lokalde gerçek
+    // veri akmaz; mock servis onun yerine geçer ve yayın hattının TAMAMI ortak koddan geçer.
     builder.Services.AddHostedService<MockGoldPriceHostedService>();
+
+    // Lokal test ortamını kullanılabilir hâle getirir (firma, kullanıcı, viewer'lar).
+    // Idempotenttir, var olanı bozmaz.
+    builder.Services.AddHostedService<SarfiyumAPI.Services.DevDataSeeder>();
 }
 else
 {
@@ -214,6 +243,12 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<GoldHub>("/goldhub");
+
+// Girişsiz (public) fiyat ekranı. Ayrı hub: GoldHub'ın oturum/tek-cihaz mantığına
+// hiç dokunmadan izole kalır. Erişim, query'deki `slug`'ın public yayını açık bir
+// tenant'a çözülmesine bağlıdır (bkz. PublicPriceHub).
+// ⚠️ Anonim uç nokta: nginx tarafında bağlantı/istek limiti uygulanmalı (AGENTS.md D7).
+app.MapHub<PublicPriceHub>("/publichub");
 
 // 🔥 EN ÖNEMLİ EKLEME: SPA FALLBACK 🔥
 // Eğer gelen istek API değilse ve dosya değilse (resim, css vs.),

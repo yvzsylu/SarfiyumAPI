@@ -120,6 +120,8 @@ namespace SarfiyumAPI.Controllers.Customer
         public async Task<IActionResult> ToggleWeb(string id)
         {
             var tenantId = User.FindFirst("TenantId")?.Value;
+            if (string.IsNullOrEmpty(tenantId)) return Unauthorized();
+
             return CreateActionResult(await _settingsService.ToggleWebStatusAsync(tenantId, id));
         }
 
@@ -129,6 +131,8 @@ namespace SarfiyumAPI.Controllers.Customer
         public async Task<IActionResult> ToggleMobile(string id)
         {
             var tenantId = User.FindFirst("TenantId")?.Value;
+            if (string.IsNullOrEmpty(tenantId)) return Unauthorized();
+
             return CreateActionResult(await _settingsService.ToggleMobileStatusAsync(tenantId, id));
         }
     }

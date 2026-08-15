@@ -8,7 +8,7 @@ namespace SarfiyumAPI.Core.Interfaces
     {
         // 1. HostedService ve Hub İçin Kritik Metotlar
         Task<bool> HasSpecialSettingsAsync(string visitorId);
-        Task<List<VisitorSessionDto>> GetOnlineVisitorsWithSettingsAsync(string tenantId);
+        Task<List<VisitorSessionDto>> GetVisitorsWithSpecialSettingsAsync(string tenantId);
 
         // 2. UI/Controller İçin Metotlar
         Task<ServiceResult<string>> UpsertSettingAsync(string tenantId, VisitorProductSettingDto model);

@@ -31,21 +31,18 @@ namespace SarfiyumAPI.Middlewares
                 {
                     if (Enum.TryParse<ClientSource>(clientSourceStr, out var clientSource))
                     {
-                        using (var scope = context.RequestServices.CreateScope())
+                        // Eskiden burada her authenticated istekte bir DB sorgusu vardı
+                        // (AGENTS.md P5). Artık önbellekli servis üzerinden okunuyor;
+                        // önbellek login/logout anında noktasal olarak güncellendiği için
+                        // tek cihaz kuralı aynı anındalıkta çalışmaya devam ediyor.
+                        var sessionCache = context.RequestServices.GetRequiredService<IActiveSessionCache>();
+                        var currentSessionId = await sessionCache.GetSessionIdAsync(userId, clientSource);
+
+                        if (currentSessionId == null || currentSessionId != sessionId)
                         {
-                            var sessionRepo = scope.ServiceProvider.GetRequiredService<IRepository<UserActiveSession>>();
-
-                            // Senin Repository yapına uygun sorgu
-                            var currentSession = await sessionRepo
-                                .Where(x => x.UserId == userId && x.ClientSource == clientSource)
-                                .FirstOrDefaultAsync();
-
-                            if (currentSession == null || currentSession.SessionId != sessionId)
-                            {
-                                context.Response.StatusCode = 401; // Yetkisiz
-                                await context.Response.WriteAsync("Session expired or logged in from another device.");
-                                return;
-                            }
+                            context.Response.StatusCode = 401; // Yetkisiz
+                            await context.Response.WriteAsync("Session expired or logged in from another device.");
+                            return;
                         }
                     }
                 }
