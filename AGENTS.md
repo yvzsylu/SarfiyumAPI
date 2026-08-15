@@ -949,3 +949,108 @@ Ayrıntılı log için `Logging:LogLevel:Default` → `"Debug"`.
 | L12 | **Gerçek fiyat doğruluğu** | Mock rakamları temsilidir | Canlıda birkaç ürünü Datshop değeriyle elle karşılaştır (kaynak × çarpan ± makas) |
 | L13 | **E-posta (şifre sıfırlama)** | Lokalde SMTP ayarlı değilse gitmez | Gerçek e-posta ile dene |
 | L14 | **Store build'leri** | Emülatör/debug ≠ release | Release imzalı build'lerle son tur test |
+
+---
+
+## 14. CANLIYA ALMA — sıra ve geri dönüş
+
+> 2026-08-15 çalışmasının canlıya alınması. **Sıra kritiktir**; yanlış sırada yapılırsa
+> giriş dahil her şey kırılır (aşağıda neden açıklandı).
+
+### 14.1 Commit noktaları (geri dönüş için)
+
+| Repo | Yeni commit | Öncesi (geri dönüş noktası) |
+|---|---|---|
+| `SarfiyumAPI` | `cbcf6a9` | **`3f46606`** |
+| `SarfiyumUI` | `e005b9b` | **`c67d13f`** |
+| `sarfiyum_mobile` (`main`) | `684d066` | **`671287c`** |
+| `sarfiyum_mobile` (`client/cilcil-altin`) | `3324562` | `b1ec526` |
+| `sarfiyum_mobile` (`cilent/altinkose`) | `9720f53` | `ae21beb` |
+
+### 14.2 ⚠️ MIGRATION ÖNCE UYGULANMALI
+
+`Tenant` entity'sine `IsPublicFeedEnabled` ve `PublicSlug` eklendi. EF, `Tenant` okuyan
+**her sorguda** bu kolonları da SELECT eder — örneğin `AuthService.LoginAsync` içindeki
+`_tenantRepository.GetByIdAsync(...)`.
+
+**Yani migration uygulanmadan yeni kod canlıya çıkarsa `Invalid column name` hatası alınır
+ve GİRİŞ DAHİL her şey kırılır.** Kod deploy'undan **önce** uygulanmalıdır.
+
+```bash
+# Lokalden canlı DB'ye. Connection string appsettings.json'daki (canlı) olmalı,
+# yani ASPNETCORE_ENVIRONMENT set EDİLMEMELİ.
+cd c:\Users\yvzsy\source\repos\SarfiyumAPI
+dotnet ef database update -p SarfiyumAPI.Data -s SarfiyumAPI
+```
+
+Uygulayacağı tek şey (el ile sadeleştirildi, katalog verisine dokunmaz):
+
+```sql
+ALTER TABLE [Tenants] ADD [IsPublicFeedEnabled] bit NOT NULL DEFAULT CAST(0 AS bit);
+ALTER TABLE [Tenants] ADD [PublicSlug] nvarchar(64) NULL;
+```
+
+> Öncesinde veritabanı yedeği al. Migration **eklemeli**dir; kod geri alınırsa kolonların
+> durması zararsızdır (eski kod onları tanımaz, SELECT'e dahil etmez). Yani **kod rollback'i
+> için migration'ı geri almaya gerek yoktur.**
+
+### 14.3 Deploy sırası
+
+| # | Adım | Not |
+|---|---|---|
+| 1 | **DB yedeği** | Migration öncesi |
+| 2 | **Migration uygula** (§14.2) | Kod deploy'undan ÖNCE — zorunlu |
+| 3 | **nginx güncelle** (§5.4) | `/publichub` bloğu + rate limiting. `nginx -t` sonra `-s reload` |
+| 4 | **`SarfiyumUI` push** (`master`) | Pipeline'ı tetikler; API repo checkout edilip Angular build alınır |
+| 5 | **`SarfiyumAPI` push** (`master`) | Asıl deploy. 4 ve 5 aynı imajda birleşir |
+| 6 | **Web'i doğrula** | Giriş, dashboard, fiyat akışı, çıkış |
+| 7 | **Tenant ayarı** | Altın Köşe için `IsPublicFeedEnabled = 1`, `PublicSlug = 'altinkose'` |
+| 8 | **Public'i doğrula** | `curl -i https://sarfiyum.com/api/public/tenant/altinkose` → 200 |
+| 9 | **Mobil build** | Üç uygulama; Altın Köşe `cilent/altinkose` branch'inden |
+
+Adım 7 için SQL:
+
+```sql
+UPDATE Tenants
+SET IsPublicFeedEnabled = 1, PublicSlug = 'altinkose'
+WHERE Name LIKE '%Altın Köşe%';   -- doğru satırı önce SELECT ile teyit et
+```
+
+> Önbellek 10 dakikalık: ayarı yaptıktan sonra public yayının başlaması birkaç dakika
+> alabilir. Hemen görmek için container'ı yeniden başlat.
+
+### 14.4 ⚠️ Mobil uygulamalar geçici olarak çalışmaz
+
+Backend deploy edildiği anda **store'daki mevcut üç mobil sürüm fiyat gösteremez** —
+`ReceivePrices` artık gönderilmiyor. Web etkilenmez (API ile aynı imajda gider).
+
+Bu bilinen ve kabul edilen bir durumdur; müşterilere güncelleme çıkana kadar beklemeleri
+söylenecektir. Yeni sürümler mümkün olan en kısa sürede store'a gönderilmelidir.
+
+### 14.5 Geri dönüş
+
+**Kod:**
+```bash
+# API
+git -C SarfiyumAPI revert --no-edit cbcf6a9 && git push
+# Web
+git -C SarfiyumUI revert --no-edit e005b9b && git push
+```
+`revert` tercih edilir (`reset --hard` + force push değil): geçmiş korunur ve pipeline
+normal şekilde tetiklenir.
+
+**Veritabanı:** geri alınmasına gerek yok (§14.2).
+
+**nginx:** `/opt/sarfiyum/nginx.conf.bak-*` dosyasından geri kopyalanır, `nginx -s reload`.
+
+**Mobil:** store sürümü yayınlanmadıysa yapılacak bir şey yok. Yayınlandıysa eski sürüme
+dönmek yerine backend'i geri almak daha hızlıdır.
+
+### 14.6 Deploy sonrası ilk 30 dakikada bakılacaklar
+
+- `docker logs -f sarfiyum_backend` → `[PERF]` **Warning** satırı çıkmamalı (yayın turu 1 sn'yi aşmıyor)
+- `[OVERLAP]` uyarısı çıkmamalı
+- `[PRICE_CONFIG]` uyarısı varsa: o üründe çarpan/makas yanlış girilmiş demektir
+- `[WATCHDOG]` ilk sıfırlama dışında sık tekrar etmemeli
+- `docker stats` → CPU, önceki duruma göre **düşmüş** olmalı
+- Bir mağaza TV'sinde fiyatların aktığını gözle doğrula
