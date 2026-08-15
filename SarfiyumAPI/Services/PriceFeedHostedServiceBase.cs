@@ -1,6 +1,6 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using SarfiyumAPI.Core.DTOs;
+using SarfiyumAPI.Core.Interfaces;
 
 namespace SarfiyumAPI.Services
 {
@@ -30,7 +30,15 @@ namespace SarfiyumAPI.Services
         private readonly IConfiguration _configuration;
         private readonly ILogger _logger;
 
-        private readonly ConcurrentDictionary<string, PriceData> _priceCache = new();
+        /// <summary>
+        /// Piyasa durumu artık burada DEĞİL, süreç genelinde ortak bir serviste tutuluyor.
+        /// Sebebi: hub'ların da bağlantı anında fiyat listesi üretebilmesi gerekiyor
+        /// (bkz. <see cref="IConnectSnapshotProvider"/>). Önbellek bu sınıfa özel kaldığı
+        /// sürece, daha önce hiç yayın almamış bir gruba bağlanan istemciye hiçbir şey
+        /// gönderilemiyordu.
+        /// </summary>
+        private readonly IMarketDataCache _marketData;
+
         private readonly SemaphoreSlim _broadcastLock = new(1, 1);
 
         private int _hasPendingUpdates;
@@ -40,15 +48,17 @@ namespace SarfiyumAPI.Services
         protected PriceFeedHostedServiceBase(
             IPriceBroadcaster broadcaster,
             IConfiguration configuration,
-            ILogger logger)
+            ILogger logger,
+            IMarketDataCache marketData)
         {
             _broadcaster = broadcaster;
             _configuration = configuration;
             _logger = logger;
+            _marketData = marketData;
         }
 
         /// <summary>Şu ana kadar toplanmış son piyasa durumu.</summary>
-        protected IReadOnlyDictionary<string, PriceData> PriceCache => _priceCache;
+        protected IReadOnlyDictionary<string, PriceData> PriceCache => _marketData.Snapshot();
 
         /// <summary>
         /// Veri kaynağı yeni bir fiyat aldığında bunu çağırır. Yayın YAPMAZ; yalnızca
@@ -58,23 +68,17 @@ namespace SarfiyumAPI.Services
         {
             if (item?.Symbol == null) return;
 
-            _priceCache[item.Symbol] = item;
+            _marketData.Update(item);
             Interlocked.Exchange(ref _hasPendingUpdates, 1);
         }
 
         /// <summary>Birden fazla fiyatı tek seferde yazar (bir Datshop paketi gibi).</summary>
         protected void UpdatePrices(IEnumerable<PriceData> items)
         {
-            var touched = false;
-
-            foreach (var item in items)
+            if (_marketData.UpdateRange(items))
             {
-                if (item?.Symbol == null) continue;
-                _priceCache[item.Symbol] = item;
-                touched = true;
+                Interlocked.Exchange(ref _hasPendingUpdates, 1);
             }
-
-            if (touched) Interlocked.Exchange(ref _hasPendingUpdates, 1);
         }
 
         /// <summary>
@@ -83,7 +87,7 @@ namespace SarfiyumAPI.Services
         /// önbelleğin olduğu gibi kullanılmasıdır.
         /// </summary>
         protected virtual IReadOnlyDictionary<string, PriceData> PrepareMarketData()
-            => new Dictionary<string, PriceData>(_priceCache);
+            => _marketData.Snapshot();
 
         /// <summary>Sabit aralıklı yayın döngüsü.</summary>
         protected async Task RunBroadcastLoopAsync(CancellationToken stoppingToken)

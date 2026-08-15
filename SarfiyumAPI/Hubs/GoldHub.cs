@@ -20,19 +20,22 @@ namespace SarfiyumAPI.Hubs
         private readonly IVisitorSettingService _visitorSettingService; // 🔥 YENİ: Servis Eklendi
         private readonly SarfiyumAPI.Services.IHubConnectionRegistry _connectionRegistry;
         private readonly IPriceFeedStateTracker _feedState;
+        private readonly SarfiyumAPI.Services.IConnectSnapshotProvider _connectSnapshot;
 
         public GoldHub(
             ILogger<GoldHub> logger,
             IActiveSessionCache activeSessionCache,
             IVisitorSettingService visitorSettingService,
             SarfiyumAPI.Services.IHubConnectionRegistry connectionRegistry,
-            IPriceFeedStateTracker feedState)
+            IPriceFeedStateTracker feedState,
+            SarfiyumAPI.Services.IConnectSnapshotProvider connectSnapshot)
         {
             _logger = logger;
             _activeSessionCache = activeSessionCache;
             _visitorSettingService = visitorSettingService;
             _connectionRegistry = connectionRegistry;
             _feedState = feedState;
+            _connectSnapshot = connectSnapshot;
         }
 
         public override async Task OnConnectedAsync()
@@ -117,7 +120,14 @@ namespace SarfiyumAPI.Hubs
             // ayrıca snapshot'takinden küçük/eşit `seq` taşıyan delta'lar da yok sayılır.
             // Bu, buradan giden mesaj ile gruba giden yayının sırasının garanti olmamasını
             // zararsız hale getirir.
-            var snapshot = _feedState.GetCurrentSnapshot(priceGroup);
+            //
+            // ⚠️ Burada eskiden yalnızca "daha önce yayınlanmış" durum okunuyordu; grup
+            // soğuksa hiçbir şey gönderilmiyor ve ekran "Veri bekleniyor" yazıp kalıyordu.
+            // Piyasa sakinken yayın döngüsü hiç çalışmadığı için bu bekleyiş süresiz
+            // olabiliyordu. Artık grup soğuksa liste bağlantı anında hesaplanıyor.
+            var snapshot = await _connectSnapshot.GetOrBuildAsync(
+                priceGroup, tenantId, platform, hasSpecial ? userId : null);
+
             if (snapshot != null)
             {
                 await Clients.Caller.SendAsync("ReceivePriceSnapshot", snapshot);

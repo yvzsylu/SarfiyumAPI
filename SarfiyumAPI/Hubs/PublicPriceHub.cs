@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using SarfiyumAPI.Core.Enums;
 using SarfiyumAPI.Core.Interfaces;
@@ -29,15 +29,18 @@ namespace SarfiyumAPI.Hubs
     {
         private readonly ITenantService _tenantService;
         private readonly IPriceFeedStateTracker _feedState;
+        private readonly SarfiyumAPI.Services.IConnectSnapshotProvider _connectSnapshot;
         private readonly ILogger<PublicPriceHub> _logger;
 
         public PublicPriceHub(
             ITenantService tenantService,
             IPriceFeedStateTracker feedState,
+            SarfiyumAPI.Services.IConnectSnapshotProvider connectSnapshot,
             ILogger<PublicPriceHub> logger)
         {
             _tenantService = tenantService;
             _feedState = feedState;
+            _connectSnapshot = connectSnapshot;
             _logger = logger;
         }
 
@@ -67,9 +70,12 @@ namespace SarfiyumAPI.Hubs
 
             await base.OnConnectedAsync();
 
-            // Bağlantı anında tam liste. Grup henüz hiç yayın almadıysa null döner ve
-            // istemci bir sonraki tick'te zaten snapshot alır.
-            var snapshot = _feedState.GetCurrentSnapshot(groupName);
+            // Bağlantı anında tam liste. Grup daha önce hiç yayın almadıysa (sunucu yeni
+            // başlamış ya da piyasa sakin olduğu için yayın döngüsü hiç dönmemiş) liste
+            // burada hesaplanır. Girişsiz ekranın başında kimse olmadığı için "bir sonraki
+            // tick'te düzelir" varsayımı burada özellikle kabul edilemezdi.
+            var snapshot = await _connectSnapshot.GetOrBuildAsync(
+                groupName, tenantId, PricePlatform.Public);
             if (snapshot != null)
             {
                 await Clients.Caller.SendAsync("ReceivePriceSnapshot", snapshot);

@@ -43,8 +43,9 @@ namespace SarfiyumAPI.Services
         public GoldPriceHostedService(
             IPriceBroadcaster broadcaster,
             IConfiguration configuration,
-            ILogger<GoldPriceHostedService> logger)
-            : base(broadcaster, configuration, logger)
+            ILogger<GoldPriceHostedService> logger,
+            IMarketDataCache marketData)
+            : base(broadcaster, configuration, logger, marketData)
         {
             _logger = logger;
             _configuration = configuration;

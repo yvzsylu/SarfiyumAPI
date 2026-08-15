@@ -106,6 +106,15 @@ builder.Services.AddSingleton<IPriceFeedStateTracker, PriceFeedStateTracker>();
 // buradan geçer; böylece lokalde test edilen davranış canlıdakiyle aynıdır.
 builder.Services.AddSingleton<IPriceBroadcaster, SarfiyumAPI.Services.PriceBroadcaster>();
 
+// Piyasadan gelen son ham durum. Singleton olmak ZORUNDA: hem yayın döngüsü yazıyor,
+// hem de hub'lar bağlantı anında liste üretmek için okuyor.
+builder.Services.AddSingleton<IMarketDataCache, SarfiyumAPI.Services.MarketDataCache>();
+
+// Bağlanan istemciye gidecek tam listeyi üretir; grup daha önce hiç yayın almadıysa
+// listeyi anında hesaplar. Scoped: içindeki tenant/viewer servisleri scoped.
+builder.Services.AddScoped<SarfiyumAPI.Services.IConnectSnapshotProvider,
+                           SarfiyumAPI.Services.ConnectSnapshotProvider>();
+
 // Önce eski kaydı silin: builder.Services.AddHostedService<GoldPriceHostedService>();
 
 // Yerine bu yapıyı kurun:

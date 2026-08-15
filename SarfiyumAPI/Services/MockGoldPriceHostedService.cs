@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SarfiyumAPI.Core.DTOs;
 using SarfiyumAPI.Core.Entities;
 using SarfiyumAPI.Core.Interfaces;
@@ -135,8 +135,9 @@ namespace SarfiyumAPI.Services
             IPriceBroadcaster broadcaster,
             IConfiguration configuration,
             ILogger<MockGoldPriceHostedService> logger,
-            IServiceProvider serviceProvider)
-            : base(broadcaster, configuration, logger)
+            IServiceProvider serviceProvider,
+            IMarketDataCache marketData)
+            : base(broadcaster, configuration, logger, marketData)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
